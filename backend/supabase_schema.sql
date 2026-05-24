@@ -141,6 +141,15 @@ ALTER TABLE security_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies before recreating (safe to re-run)
+DROP POLICY IF EXISTS "Service role full access" ON guild_settings;
+DROP POLICY IF EXISTS "Service role full access" ON warnings;
+DROP POLICY IF EXISTS "Service role full access" ON tickets;
+DROP POLICY IF EXISTS "Service role full access" ON backups;
+DROP POLICY IF EXISTS "Service role full access" ON security_logs;
+DROP POLICY IF EXISTS "Service role full access" ON polls;
+DROP POLICY IF EXISTS "Service role full access" ON users;
+
 -- Allow service_role full access (backend uses service_role key)
 CREATE POLICY "Service role full access" ON guild_settings FOR ALL USING (true);
 CREATE POLICY "Service role full access" ON warnings FOR ALL USING (true);
