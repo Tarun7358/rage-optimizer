@@ -1,0 +1,26 @@
+{
+  "name": "rage-optimizer-backend",
+  "version": "1.0.0",
+  "description": "RAGE OPTIMIZER Discord Bot & Web Dashboard API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.1",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "firebase-admin": "^13.10.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "license": "ISC"
+}

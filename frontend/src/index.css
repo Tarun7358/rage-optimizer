@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@theme {
+  --color-darkBg: #08080c;
+  --color-cardBg: rgba(20, 20, 28, 0.6);
+  --color-cardBgSolid: #14141c;
+  --color-accentRed: #ff003c;
+  --color-accentRedHover: #d00030;
+  --color-borderColor: rgba(255, 0, 60, 0.15);
+  --color-textGray: #a0a0ab;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-gaming: 'Outfit', sans-serif;
+
+  --shadow-neonGlow: 0 0 15px rgba(255, 0, 60, 0.3);
+  --shadow-neonGlowGreen: 0 0 15px rgba(0, 255, 60, 0.3);
+  --shadow-neonHover: 0 0 25px rgba(255, 0, 60, 0.55);
+}
+
+@layer base {
+  body {
+    @apply bg-darkBg text-white font-sans overflow-x-hidden;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(255, 0, 60, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(255, 0, 60, 0.03) 0px, transparent 50%);
+  }
+
+  /* Custom Webkit scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #08080c;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #ff003c;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ff3366;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(20, 20, 28, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 0, 60, 0.08);
+  }
+  
+  .glass-card-hover {
+    @apply transition-all duration-300;
+  }
+  
+  .glass-card-hover:hover {
+    background: rgba(255, 0, 60, 0.04);
+    border-color: rgba(255, 0, 60, 0.35);
+    box-shadow: 0 0 20px rgba(255, 0, 60, 0.2);
+  }
+
+  .neon-text-glow {
+    text-shadow: 0 0 10px rgba(255, 0, 60, 0.6);
+  }
+
+  .neon-border-glow {
+    box-shadow: 0 0 15px rgba(255, 0, 60, 0.25);
+  }
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 6s infinite ease-in-out;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 4s infinite ease-in-out;
+}
