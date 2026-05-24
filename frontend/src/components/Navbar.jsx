@@ -69,8 +69,8 @@ export default function Navbar() {
       {/* Left: Logo + Guild Switcher */}
       <div className="flex items-center space-x-4">
         <Link to="/" className="flex items-center space-x-2.5 group">
-          <div className="w-9 h-9 rounded-lg bg-accentRed flex items-center justify-center shadow-neonGlow transition-transform group-hover:scale-105">
-            <Shield className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 rounded-lg overflow-hidden border border-white/10 shadow-neonGlow transition-transform group-hover:scale-105">
+            <img src="/logo.jpeg" alt="Rage Optimizer Logo" className="w-full h-full object-cover" />
           </div>
           <span className="font-gaming font-black text-lg tracking-wider text-white hidden sm:block">
             RAGE <span className="text-accentRed">OPTIMIZER</span>

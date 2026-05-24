@@ -386,8 +386,8 @@ export default function Home() {
       <footer className="border-t border-white/5 bg-[#040406]/95 py-10 relative z-10">
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-accentRed flex items-center justify-center shadow-neonGlow">
-              <Shield className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 shadow-neonGlow">
+              <img src="/logo.jpeg" alt="Rage Optimizer Logo" className="w-full h-full object-cover" />
             </div>
             <span className="font-gaming font-black text-white tracking-wider">RAGE OPTIMIZER</span>
           </div>
