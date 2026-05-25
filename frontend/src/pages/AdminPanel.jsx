@@ -45,7 +45,7 @@ export default function AdminPanel() {
 
   if (!user || !user.isAdmin) {
     return (
-      <div className="min-h-screen bg-[#08080c] flex items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-darkBg flex items-center justify-center p-6 text-center transition-colors duration-300">
         <div>
           <h2 className="text-2xl font-gaming font-black text-accentRed tracking-wider uppercase mb-2">ACCESS RESTRICTED</h2>
           <p className="text-textGray text-sm">You must hold global Administrator credentials to view the Bot Control Panel.</p>
@@ -55,7 +55,7 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-[#08080c] pt-24 pb-12 px-6">
+    <div className="min-h-screen bg-darkBg pt-24 pb-12 px-4 sm:px-6 transition-colors duration-300">
       <Navbar />
       <div className="container mx-auto max-w-5xl">
         {/* Header */}
@@ -129,7 +129,7 @@ export default function AdminPanel() {
                   <h3 className="font-gaming font-bold text-white uppercase text-md">Live Node Console</h3>
                 </div>
 
-                <div className="bg-[#040406] p-4 rounded-lg flex-1 overflow-y-auto font-mono text-[10px] text-textGray leading-relaxed space-y-1">
+                <div className="bg-white/5 border border-borderColor p-4 rounded-xl flex-1 overflow-y-auto font-mono text-[10px] text-textGray leading-relaxed space-y-1">
                   {logs.length === 0 ? (
                     <div className="text-textGray/45 italic">Awaiting console streams...</div>
                   ) : (

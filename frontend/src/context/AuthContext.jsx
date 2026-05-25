@@ -147,6 +147,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('rage_theme') || 'dark';
+  });
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'light-blue') {
+      root.classList.add('light-blue');
+    } else {
+      root.classList.remove('light-blue');
+    }
+    localStorage.setItem('rage_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light-blue' : 'dark');
+  };
+
   const getSelectedGuild = () => {
     return guilds.find(g => g.id === selectedGuildId) || null;
   };
@@ -164,7 +184,11 @@ export const AuthProvider = ({ children }) => {
       selectedGuildId,
       setSelectedGuildId,
       selectedGuild: getSelectedGuild(),
-      backendUrl: BACKEND_URL
+      backendUrl: BACKEND_URL,
+      theme,
+      toggleTheme,
+      sidebarOpen,
+      setSidebarOpen
     }}>
       {children}
     </AuthContext.Provider>

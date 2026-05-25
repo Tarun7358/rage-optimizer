@@ -250,10 +250,21 @@ export default function ClonerDash() {
     return matchesSearch && matchesCat;
   });
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-darkBg flex items-center justify-center">
+        <div className="relative">
+          <div className="w-12 h-12 border-2 border-white/5 rounded-full" />
+          <div className="w-12 h-12 border-t-2 border-accentRed rounded-full animate-spin absolute inset-0" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#08080c] pt-16 flex">
+    <div className="min-h-screen bg-darkBg pt-16 flex transition-colors duration-300">
       <Sidebar />
-      <main className="flex-1 ml-64 p-8 overflow-y-auto">
+      <main className="flex-1 ml-0 lg:ml-64 p-4 sm:p-6 md:p-8 overflow-y-auto transition-all duration-300">
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* Header */}
@@ -301,7 +312,7 @@ export default function ClonerDash() {
                 </div>
 
                 {/* Console Log Terminal */}
-                <div className="bg-[#040406] border border-white/5 rounded-lg p-3 h-40 overflow-y-auto font-mono text-[10px] text-zinc-400 space-y-1 scrollbar-thin">
+                <div className="bg-white/5 border border-borderColor rounded-xl p-3 h-40 overflow-y-auto font-mono text-[10px] text-zinc-400 space-y-1 scrollbar-thin">
                   {isPaused && (
                     <div className="text-amber-400 font-bold">[SYSTEM] Clone worker paused. Waiting for resume instruction...</div>
                   )}

@@ -1,28 +1,76 @@
 @import "tailwindcss";
 
 @theme {
-  --color-darkBg: #08080c;
-  --color-cardBg: rgba(20, 20, 28, 0.6);
-  --color-cardBgSolid: #14141c;
-  --color-accentRed: #ff003c;
-  --color-accentRedHover: #d00030;
-  --color-borderColor: rgba(255, 0, 60, 0.15);
-  --color-textGray: #a0a0ab;
+  --color-darkBg: var(--bg-primary);
+  --color-cardBg: var(--bg-card);
+  --color-cardBgSolid: var(--bg-secondary);
+  --color-accentRed: var(--accent-color);
+  --color-accentRedHover: var(--accent-color-hover);
+  --color-borderColor: var(--border-color);
+  --color-textGray: var(--text-secondary);
 
   --font-sans: 'Inter', sans-serif;
   --font-gaming: 'Outfit', sans-serif;
 
-  --shadow-neonGlow: 0 0 15px rgba(255, 0, 60, 0.3);
-  --shadow-neonGlowGreen: 0 0 15px rgba(0, 255, 60, 0.3);
-  --shadow-neonHover: 0 0 25px rgba(255, 0, 60, 0.55);
+  --shadow-neonGlow: var(--accent-glow);
+  --shadow-neonGlowGreen: var(--accent-glow-green);
+  --shadow-neonHover: var(--accent-hover-glow);
+}
+
+:root {
+  --bg-primary: #030306;
+  --bg-secondary: #0a0a10;
+  --bg-card: rgba(13, 13, 22, 0.45);
+  --accent-color: #00d2ff; /* Cyan accent */
+  --accent-color-hover: #00b4db;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent-glow: 0 0 15px rgba(0, 210, 255, 0.3);
+  --accent-glow-green: 0 0 15px rgba(16, 185, 129, 0.3);
+  --accent-hover-glow: 0 0 25px rgba(0, 210, 255, 0.55);
+  --nav-bg: rgba(3, 3, 6, 0.85);
+  --sidebar-bg: rgba(6, 6, 10, 0.95);
+  --border-color: rgba(0, 210, 255, 0.08);
+  --border-color-hover: rgba(0, 210, 255, 0.3);
+  --card-hover-bg: rgba(0, 210, 255, 0.04);
+  --gradient-accent: linear-gradient(135deg, #00d2ff 0%, #7c3aed 100%);
+  --glow-color: rgba(0, 210, 255, 0.4);
+}
+
+html.light-blue {
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --accent-color: #2563eb; /* Premium Royal Blue */
+  --accent-color-hover: #1d4ed8;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --accent-glow: 0 0 12px rgba(37, 99, 235, 0.15);
+  --accent-glow-green: 0 0 12px rgba(16, 185, 129, 0.15);
+  --accent-hover-glow: 0 0 20px rgba(37, 99, 235, 0.3);
+  --nav-bg: rgba(241, 245, 249, 0.85);
+  --sidebar-bg: rgba(255, 255, 255, 0.95);
+  --border-color: rgba(37, 99, 235, 0.12);
+  --border-color-hover: rgba(37, 99, 235, 0.3);
+  --card-hover-bg: rgba(37, 99, 235, 0.04);
+  --gradient-accent: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%);
+  --glow-color: rgba(37, 99, 235, 0.2);
 }
 
 @layer base {
   body {
-    @apply bg-darkBg text-white font-sans overflow-x-hidden;
+    @apply bg-darkBg text-textGray font-sans overflow-x-hidden transition-colors duration-300;
+    color: var(--text-primary);
     background-image: 
-      radial-gradient(at 0% 0%, rgba(255, 0, 60, 0.05) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(255, 0, 60, 0.03) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgba(0, 210, 255, 0.04) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.03) 0px, transparent 50%);
+  }
+
+  html.light-blue body {
+    color: var(--text-primary);
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.04) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.02) 0px, transparent 50%);
   }
 
   /* Custom Webkit scrollbar */
@@ -31,23 +79,54 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #08080c;
+    background: var(--bg-primary);
   }
   ::-webkit-scrollbar-thumb {
-    background: #ff003c;
+    background: var(--accent-color);
     border-radius: 3px;
+    opacity: 0.8;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #ff3366;
+    background: var(--accent-color-hover);
+  }
+  
+  /* Text and details compatibility for light/dark dynamic class */
+  html.light-blue h1,
+  html.light-blue h2,
+  html.light-blue h3,
+  html.light-blue h4,
+  html.light-blue h5,
+  html.light-blue h6 {
+    color: var(--text-primary);
+  }
+
+  html.light-blue main .text-white,
+  html.light-blue aside .text-white,
+  html.light-blue header .text-white {
+    color: var(--text-primary);
+  }
+
+  /* Keep white text inside actual colored badges, buttons, etc */
+  html.light-blue .bg-accentRed .text-white,
+  html.light-blue .bg-accentRedHover .text-white,
+  html.light-blue .bg-emerald-500 .text-white,
+  html.light-blue .bg-red-500 .text-white,
+  html.light-blue .bg-amber-500 .text-white,
+  html.light-blue button.bg-accentRed,
+  html.light-blue button.bg-accentRed *,
+  html.light-blue a.bg-accentRed,
+  html.light-blue a.bg-accentRed * {
+    color: #ffffff !important;
   }
 }
 
 @layer utilities {
   .glass-card {
-    background: rgba(20, 20, 28, 0.45);
+    background: var(--bg-card);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 0, 60, 0.08);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .glass-card-hover {
@@ -55,29 +134,29 @@
   }
   
   .glass-card-hover:hover {
-    background: rgba(255, 0, 60, 0.04);
-    border-color: rgba(255, 0, 60, 0.35);
-    box-shadow: 0 0 20px rgba(255, 0, 60, 0.2);
+    background: var(--card-hover-bg);
+    border-color: var(--border-color-hover);
+    box-shadow: var(--accent-hover-glow);
   }
 
   .neon-text-glow {
-    text-shadow: 0 0 10px rgba(255, 0, 60, 0.6);
+    text-shadow: 0 0 10px var(--glow-color);
   }
 
   .neon-border-glow {
-    box-shadow: 0 0 15px rgba(255, 0, 60, 0.25);
+    box-shadow: var(--accent-glow);
   }
 }
 
 /* Animations */
 @keyframes pulseGlow {
   0%, 100% {
-    opacity: 0.2;
+    opacity: 0.15;
     transform: scale(1);
   }
   50% {
-    opacity: 0.35;
-    transform: scale(1.05);
+    opacity: 0.3;
+    transform: scale(1.03);
   }
 }
 
@@ -90,10 +169,36 @@
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
 }
 
 .animate-float {
   animation: float 4s infinite ease-in-out;
+}
+
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 12s infinite linear;
+}
+
+/* Skeleton Loading styles */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: loading-skeleton 1.5s infinite;
+}
+
+html.light-blue .skeleton {
+  background: linear-gradient(90deg, rgba(0,0,0,0.03) 25%, rgba(0,0,0,0.06) 50%, rgba(0,0,0,0.03) 75%);
+  background-size: 200% 100%;
+  animation: loading-skeleton 1.5s infinite;
+}
+
+@keyframes loading-skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

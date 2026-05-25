@@ -160,16 +160,16 @@ export default function NotificationDash() {
 
   if (loading || !settings) {
     return (
-      <div className="min-h-screen bg-[#08080c] flex items-center justify-center">
+      <div className="min-h-screen bg-darkBg flex items-center justify-center">
         <div className="w-12 h-12 border-t-2 border-accentRed rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#08080c] pt-16 flex">
+    <div className="min-h-screen bg-darkBg pt-16 flex transition-colors duration-300">
       <Sidebar />
-      <main className="flex-1 ml-64 p-8 overflow-y-auto">
+      <main className="flex-1 ml-0 lg:ml-64 p-4 sm:p-6 md:p-8 overflow-y-auto transition-all duration-300">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/5 pb-6 mb-8">
@@ -205,7 +205,7 @@ export default function NotificationDash() {
                       value={ytUrl}
                       onChange={(e) => setYtUrl(e.target.value)}
                       placeholder="https://youtube.com/@channel"
-                      className="w-full bg-[#08080c] border border-white/10 text-white rounded-lg text-xs p-2 focus:outline-none focus:border-accentRed"
+                      className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-xs p-2 focus:outline-none focus:border-accentRed"
                     />
                   </div>
                   <div>
@@ -213,7 +213,7 @@ export default function NotificationDash() {
                     <select
                       value={ytChan}
                       onChange={(e) => setYtChan(e.target.value)}
-                      className="w-full bg-[#08080c] border border-white/10 text-white rounded-lg text-xs p-2 focus:outline-none focus:border-accentRed"
+                      className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-xs p-2 focus:outline-none focus:border-accentRed"
                     >
                       <option value="">Select Channel...</option>
                       {channels.filter(c => c.type === 0).map(c => (
@@ -265,7 +265,7 @@ export default function NotificationDash() {
                       value={twitchName}
                       onChange={(e) => setTwitchName(e.target.value)}
                       placeholder="streamer_name"
-                      className="w-full bg-[#08080c] border border-white/10 text-white rounded-lg text-xs p-2 focus:outline-none focus:border-accentRed"
+                      className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-xs p-2 focus:outline-none focus:border-accentRed"
                     />
                   </div>
                   <div>
@@ -273,7 +273,7 @@ export default function NotificationDash() {
                     <select
                       value={twitchChan}
                       onChange={(e) => setTwitchChan(e.target.value)}
-                      className="w-full bg-[#08080c] border border-white/10 text-white rounded-lg text-xs p-2 focus:outline-none focus:border-accentRed"
+                      className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-xs p-2 focus:outline-none focus:border-accentRed"
                     >
                       <option value="">Select Channel...</option>
                       {channels.filter(c => c.type === 0).map(c => (
@@ -325,7 +325,7 @@ export default function NotificationDash() {
                       value={instaName}
                       onChange={(e) => setInstaName(e.target.value)}
                       placeholder="instagram_profile"
-                      className="w-full bg-[#08080c] border border-white/10 text-white rounded-lg text-xs p-2 focus:outline-none focus:border-accentRed"
+                      className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-xs p-2 focus:outline-none focus:border-accentRed"
                     />
                   </div>
                   <div>
@@ -333,7 +333,7 @@ export default function NotificationDash() {
                     <select
                       value={instaChan}
                       onChange={(e) => setInstaChan(e.target.value)}
-                      className="w-full bg-[#08080c] border border-white/10 text-white rounded-lg text-xs p-2 focus:outline-none focus:border-accentRed"
+                      className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-xs p-2 focus:outline-none focus:border-accentRed"
                     >
                       <option value="">Select Channel...</option>
                       {channels.filter(c => c.type === 0).map(c => (

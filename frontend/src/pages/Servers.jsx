@@ -8,6 +8,7 @@ export default function Servers() {
   const { user, guilds, setSelectedGuildId, loading, refreshGuilds } = useAuth();
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -27,7 +28,7 @@ export default function Servers() {
     }
   }, []);
 
-  // Refresh guilds when tab/window is focused (e.g. after adding bot in new tab)
+  // Refresh guilds when tab/window is focused
   useEffect(() => {
     const handleFocus = () => {
       if (user) {
@@ -41,13 +42,13 @@ export default function Servers() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#08080c] flex items-center justify-center">
+      <div className="min-h-screen bg-darkBg flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <div className="relative">
             <div className="w-16 h-16 border-2 border-white/5 rounded-full" />
             <div className="w-16 h-16 border-t-2 border-accentRed rounded-full animate-spin absolute inset-0" />
           </div>
-          <span className="text-textGray text-sm font-semibold tracking-wider">Syncing Guilds...</span>
+          <span className="text-textGray text-sm font-semibold tracking-wider animate-pulse">Syncing Guilds...</span>
         </div>
       </div>
     );
@@ -61,6 +62,10 @@ export default function Servers() {
 
   const joinedGuilds = adminGuilds.filter(g => g.botJoined);
   const notJoinedGuilds = adminGuilds.filter(g => !g.botJoined);
+
+  // Apply search filtering
+  const filteredJoined = joinedGuilds.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredNotJoined = notJoinedGuilds.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const handleGuildSelect = (guildId, isJoined) => {
     if (isJoined) {
@@ -76,19 +81,19 @@ export default function Servers() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06 }}
-      whileHover={{ y: -3 }}
+      transition={{ delay: index * 0.05 }}
+      whileHover={{ y: -4 }}
       className={`glass-card p-5 rounded-2xl flex flex-col justify-between border transition-all ${
         guild.botJoined
-          ? 'hover:border-accentRed/30 hover:shadow-neonGlow'
-          : 'hover:border-white/20'
+          ? 'hover:border-accentRed/40 hover:shadow-neonGlow'
+          : 'hover:border-borderColor/80 hover:shadow-sm'
       }`}
     >
       <div className="flex items-center space-x-4 mb-5">
         {guild.icon ? (
           <img
             src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
-            className="w-14 h-14 rounded-xl border border-white/8 shadow-lg"
+            className="w-14 h-14 rounded-xl border border-borderColor shadow-lg"
             alt={guild.name}
           />
         ) : (
@@ -120,22 +125,22 @@ export default function Servers() {
         className={`w-full text-xs px-4 py-2.5 rounded-xl font-gaming font-black tracking-wider flex items-center justify-center space-x-2 transition-all ${
           guild.botJoined
             ? 'bg-accentRed hover:bg-accentRedHover text-white shadow-neonGlow hover:shadow-neonHover'
-            : 'bg-white/6 border border-white/12 hover:bg-white/10 hover:border-white/20 text-white'
+            : 'bg-white/5 border border-borderColor hover:bg-white/10 text-white'
         }`}
       >
         {guild.botJoined ? (
           <><span>CONFIGURE</span><ArrowRight className="w-3.5 h-3.5" /></>
         ) : (
-          <><span>ADD BOT</span><Plus className="w-3.5 h-3.5" /></>
+          <><span>ADD BOT</span><Plus className="w-3.5 h-3.5 text-accentRed" /></>
         )}
       </button>
     </motion.div>
   );
 
   return (
-    <div className="min-h-screen pt-24 pb-16 bg-[#08080c] px-6 relative overflow-hidden">
+    <div className="min-h-screen pt-24 pb-16 bg-darkBg px-4 sm:px-6 relative overflow-hidden transition-colors duration-300">
       {/* Background blob */}
-      <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-accentRed/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-accentRed/3 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="container mx-auto max-w-6xl relative z-10">
         {/* Header */}
@@ -159,27 +164,40 @@ export default function Servers() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-textGray text-sm mt-2"
+            className="text-textGray text-xs sm:text-sm mt-2"
           >
             You can only configure servers where you hold Administrator or Owner privileges.
           </motion.p>
+          
+          {/* Controls Bar: Search & Sync */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="mt-6 flex justify-center"
+            className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center max-w-xl mx-auto"
           >
+            <div className="relative w-full">
+              <Search className="w-4 h-4 text-textGray/60 absolute left-3 top-3" />
+              <input
+                type="text"
+                placeholder="Search your servers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white/5 dark:bg-[#0c0c14]/40 border border-borderColor rounded-xl text-xs pl-10 pr-4 py-3 text-white focus:outline-none focus:border-accentRed placeholder-textGray/55"
+              />
+            </div>
+            
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl border text-xs font-gaming font-bold tracking-wider transition-all duration-300 ${
+              className={`flex items-center space-x-2 px-5 py-3 rounded-xl border text-xs font-gaming font-bold tracking-wider transition-all duration-300 w-full sm:w-auto shrink-0 justify-center ${
                 refreshing
-                  ? 'bg-white/5 border-white/10 text-textGray cursor-not-allowed'
+                  ? 'bg-white/5 border-borderColor text-textGray cursor-not-allowed'
                   : 'bg-accentRed/10 border-accentRed/30 hover:border-accentRed text-white hover:bg-accentRed/25 hover:shadow-neonGlow'
               }`}
             >
               <RefreshCw className={`w-4 h-4 text-accentRed ${refreshing ? 'animate-spin' : ''}`} />
-              <span>{refreshing ? 'SYNCING SERVERS...' : 'SYNC SERVERS'}</span>
+              <span>{refreshing ? 'SYNCING...' : 'SYNC SERVERS'}</span>
             </button>
           </motion.div>
         </div>
@@ -190,7 +208,7 @@ export default function Servers() {
             animate={{ opacity: 1, scale: 1 }}
             className="glass-card p-12 rounded-2xl text-center max-w-md mx-auto"
           >
-            <ShieldAlert className="w-14 h-14 text-accentRed mx-auto mb-4 opacity-70" />
+            <ShieldAlert className="w-14 h-14 text-accentRed mx-auto mb-4 opacity-70 animate-pulse" />
             <h4 className="text-lg font-gaming font-bold text-white mb-3">No Manageable Servers</h4>
             <p className="text-textGray text-xs leading-relaxed mb-6">
               You do not have Administrator or Owner privileges on any server. Make sure you're logged in with the correct account.
@@ -211,15 +229,19 @@ export default function Servers() {
             {joinedGuilds.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-sm font-bold text-white/70 uppercase tracking-widest">
-                    🟢 Bot Active — {joinedGuilds.length} Server{joinedGuilds.length !== 1 ? 's' : ''}
+                  <h2 className="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-widest">
+                    🟢 Bot Active — {filteredJoined.length} Server{filteredJoined.length !== 1 ? 's' : ''}
                   </h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {joinedGuilds.map((guild, i) => (
-                    <GuildCard key={guild.id} guild={guild} index={i} />
-                  ))}
-                </div>
+                {filteredJoined.length === 0 ? (
+                  <p className="text-xs text-textGray italic pl-2">No matching servers found.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredJoined.map((guild, i) => (
+                      <GuildCard key={guild.id} guild={guild} index={i} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -227,15 +249,19 @@ export default function Servers() {
             {notJoinedGuilds.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-sm font-bold text-white/40 uppercase tracking-widest">
-                    ⚫ Bot Not Added — {notJoinedGuilds.length} Server{notJoinedGuilds.length !== 1 ? 's' : ''}
+                  <h2 className="text-xs sm:text-sm font-bold text-white/40 uppercase tracking-widest">
+                    ⚫ Bot Not Added — {filteredNotJoined.length} Server{filteredNotJoined.length !== 1 ? 's' : ''}
                   </h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {notJoinedGuilds.map((guild, i) => (
-                    <GuildCard key={guild.id} guild={guild} index={joinedGuilds.length + i} />
-                  ))}
-                </div>
+                {filteredNotJoined.length === 0 ? (
+                  <p className="text-xs text-textGray italic pl-2">No matching servers found.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredNotJoined.map((guild, i) => (
+                      <GuildCard key={guild.id} guild={guild} index={joinedGuilds.length + i} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -244,15 +270,15 @@ export default function Servers() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="glass-card border-dashed border-white/10 rounded-2xl p-8 text-center"
+              className="glass-card border-dashed border-borderColor rounded-2xl p-8 text-center"
             >
               <Server className="w-8 h-8 text-textGray/30 mx-auto mb-3" />
-              <p className="text-textGray text-sm mb-4">Don't see a server? Add the bot to get started.</p>
+              <p className="text-textGray text-xs sm:text-sm mb-4 font-semibold">Don't see a server? Add the bot to get started.</p>
               <a
                 href={BOT_INVITE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-white/6 hover:bg-white/10 border border-white/12 hover:border-accentRed/30 text-white px-6 py-2.5 rounded-xl font-gaming font-bold text-xs tracking-wider inline-flex items-center space-x-2 transition-all"
+                className="bg-white/5 hover:bg-white/10 border border-borderColor hover:border-accentRed/35 text-white px-6 py-2.5 rounded-xl font-gaming font-bold text-xs tracking-wider inline-flex items-center space-x-2 transition-all shadow-sm"
               >
                 <Plus className="w-4 h-4 text-accentRed" />
                 <span>ADD RAGE OPTIMIZER TO SERVER</span>

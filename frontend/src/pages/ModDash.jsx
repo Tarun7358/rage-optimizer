@@ -152,16 +152,16 @@ export default function ModDash() {
 
   if (loading || !settings) {
     return (
-      <div className="min-h-screen bg-[#08080c] flex items-center justify-center">
+      <div className="min-h-screen bg-darkBg flex items-center justify-center">
         <div className="w-12 h-12 border-t-2 border-accentRed rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#08080c] pt-16 flex">
+    <div className="min-h-screen bg-darkBg pt-16 flex transition-colors duration-300">
       <Sidebar />
-      <main className="flex-1 ml-64 p-8 overflow-y-auto">
+      <main className="flex-1 ml-0 lg:ml-64 p-4 sm:p-6 md:p-8 overflow-y-auto transition-all duration-300">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/5 pb-6 mb-8">
@@ -218,7 +218,7 @@ export default function ModDash() {
                   <select
                     value={settings.moderation.logChannelId}
                     onChange={(e) => handleChange('logChannelId', e.target.value)}
-                    className="w-full bg-[#08080c] border border-white/10 text-white rounded-lg text-sm p-2.5 focus:outline-none focus:border-accentRed"
+                    className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-sm p-2.5 focus:outline-none focus:border-accentRed"
                   >
                     <option value="">Disable logs channel</option>
                     {channels.filter(c => c.type === 0).map(c => (
@@ -276,7 +276,7 @@ export default function ModDash() {
                     type="text"
                     value={newWord}
                     onChange={(e) => setNewWord(e.target.value)}
-                    className="w-full bg-[#08080c] border border-white/10 text-white rounded-lg text-sm px-2.5 py-1.5 focus:outline-none focus:border-accentRed"
+                    className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-sm px-2.5 py-1.5 focus:outline-none focus:border-accentRed"
                     placeholder="badword"
                   />
                   <button
