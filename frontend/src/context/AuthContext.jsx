@@ -131,6 +131,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshGuilds = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/auth/guilds`);
+      const { guilds } = response.data;
+      localStorage.setItem('rage_guilds', JSON.stringify(guilds));
+      setGuilds(guilds);
+      return guilds;
+    } catch (error) {
+      console.error('Failed to refresh guilds', error);
+      throw error;
+    }
+  };
+
   const getSelectedGuild = () => {
     return guilds.find(g => g.id === selectedGuildId) || null;
   };
@@ -144,6 +157,7 @@ export const AuthProvider = ({ children }) => {
       mockLogin,
       logout,
       exchangeCode,
+      refreshGuilds,
       selectedGuildId,
       setSelectedGuildId,
       selectedGuild: getSelectedGuild(),

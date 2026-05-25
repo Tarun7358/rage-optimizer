@@ -1,12 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth, BOT_INVITE_URL } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Server, Plus, ArrowRight, ExternalLink, Search } from 'lucide-react';
+import { ShieldAlert, Server, Plus, ArrowRight, ExternalLink, Search, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Servers() {
-  const { user, guilds, setSelectedGuildId, loading } = useAuth();
+  const { user, guilds, setSelectedGuildId, loading, refreshGuilds } = useAuth();
   const navigate = useNavigate();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshGuilds();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Refresh guilds on mount
+  useEffect(() => {
+    if (user) {
+      refreshGuilds().catch(console.error);
+    }
+  }, []);
+
+  // Refresh guilds when tab/window is focused (e.g. after adding bot in new tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        refreshGuilds().catch(console.error);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user, refreshGuilds]);
 
   if (loading) {
     return (
@@ -128,6 +159,25 @@ export default function Servers() {
           >
             You can only configure servers where you hold Administrator or Owner privileges.
           </motion.p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 flex justify-center"
+          >
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl border text-xs font-gaming font-bold tracking-wider transition-all duration-300 ${
+                refreshing
+                  ? 'bg-white/5 border-white/10 text-textGray cursor-not-allowed'
+                  : 'bg-accentRed/10 border-accentRed/30 hover:border-accentRed text-white hover:bg-accentRed/25 hover:shadow-neonGlow'
+              }`}
+            >
+              <RefreshCw className={`w-4 h-4 text-accentRed ${refreshing ? 'animate-spin' : ''}`} />
+              <span>{refreshing ? 'SYNCING SERVERS...' : 'SYNC SERVERS'}</span>
+            </button>
+          </motion.div>
         </div>
 
         {adminGuilds.length === 0 ? (

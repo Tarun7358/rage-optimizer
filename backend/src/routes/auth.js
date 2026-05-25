@@ -193,4 +193,121 @@ router.post('/discord', async (req, res) => {
   }
 });
 
+// GET /api/auth/guilds - Refresh user guilds
+router.get('/guilds', authMiddleware, async (req, res) => {
+  const userId = req.user.userId;
+
+  const clientId = process.env.DISCORD_CLIENT_ID;
+  const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+
+  // Mock flow
+  if (clientSecret === 'mock_client_secret' || userId === '1234567890') {
+    return res.json({
+      guilds: [
+        {
+          id: 'mock_guild_id_1',
+          name: 'Rage Esports Tournament',
+          icon: null,
+          owner: true,
+          permissions: '2147483647',
+          features: [],
+          botJoined: true
+        },
+        {
+          id: 'mock_guild_id_2',
+          name: 'Rage Optimizer Free Fire Hub',
+          icon: null,
+          owner: true,
+          permissions: '2147483647',
+          features: [],
+          botJoined: true
+        },
+        {
+          id: 'mock_guild_id_3',
+          name: 'Unconfigured Community Server',
+          icon: null,
+          owner: false,
+          permissions: '8',
+          features: [],
+          botJoined: false
+        }
+      ]
+    });
+  }
+
+  try {
+    const user = await dbService.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    let accessToken = user.accessToken;
+    let refreshToken = user.refreshToken;
+    let expiresAt = user.expiresAt;
+
+    // Check if token needs refresh (if current time is past expiresAt - 1 minute)
+    const isExpired = expiresAt ? new Date() > new Date(new Date(expiresAt).getTime() - 60000) : true;
+
+    if (isExpired && refreshToken) {
+      try {
+        console.log(`[Auth API] Refreshing Discord access token for user ${userId}...`);
+        const params = new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken
+        });
+
+        const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', params, {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+
+        const { access_token, refresh_token, expires_in } = tokenResponse.data;
+
+        accessToken = access_token;
+        refreshToken = refresh_token;
+        expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
+
+        // Save new token to DB
+        await dbService.updateUser(userId, {
+          accessToken,
+          refreshToken,
+          expiresAt
+        });
+        console.log(`[Auth API] Discord token refreshed successfully for user ${userId}.`);
+      } catch (refreshErr) {
+        console.error('[Auth API Refresh Error]', refreshErr.response ? refreshErr.response.data : refreshErr.message);
+        // If refresh fails, try with old access token anyway
+      }
+    }
+
+    // Fetch user guilds from Discord
+    const guildsResponse = await axios.get('https://discord.com/api/users/@me/guilds', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    const userGuilds = guildsResponse.data;
+
+    // Check if bot is present in guilds
+    const botClient = require('../bot/client').client;
+    const enrichedGuilds = userGuilds.map(guild => {
+      const botJoined = botClient.guilds.cache.has(guild.id);
+      return {
+        id: guild.id,
+        name: guild.name,
+        icon: guild.icon,
+        owner: guild.owner,
+        permissions: guild.permissions,
+        botJoined
+      };
+    });
+
+    res.json({ guilds: enrichedGuilds });
+
+  } catch (error) {
+    console.error('[Refresh Guilds API Error]', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to refresh guilds from Discord' });
+  }
+});
+
 module.exports = router;
