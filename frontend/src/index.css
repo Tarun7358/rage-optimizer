@@ -202,3 +202,13 @@ html.light-blue .skeleton {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+select option {
+  background-color: #0b0c10 !important;
+  color: #ffffff !important;
+}
+
+html.light-blue select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}

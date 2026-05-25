@@ -21,7 +21,9 @@ module.exports = {
       if (!str) return "";
       return str
         .replace(/{user}/g, `${member}`)
+        .replace(/{user\.mention}/g, `${member}`)
         .replace(/{server}/g, guild.name)
+        .replace(/{server\.name}/g, guild.name)
         .replace(/{membercount}/g, guild.memberCount.toString());
     };
 

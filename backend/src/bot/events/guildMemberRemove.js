@@ -21,7 +21,9 @@ module.exports = {
       if (!str) return "";
       return str
         .replace(/{user}/g, `${member.user.username}`)
+        .replace(/{user\.mention}/g, `${member.user.username}`)
         .replace(/{server}/g, guild.name)
+        .replace(/{server\.name}/g, guild.name)
         .replace(/{membercount}/g, guild.memberCount.toString());
     };
 
@@ -32,7 +34,7 @@ module.exports = {
         const leaveEmbed = new EmbedBuilder()
           .setColor('#ff003c')
           .setTitle('👋 Member Left')
-          .setDescription(formatMessage(`**{user}** has left the server. We are now down to **{membercount}** members.`))
+          .setDescription(formatMessage(`👋 **{user}** has left **{server}**. We are now down to **{membercount}** members.`))
           .setThumbnail(member.user.displayAvatarURL({ forceStatic: false }) || 'https://cdn.discordapp.com/embed/avatars/0.png')
           .setTimestamp();
         
