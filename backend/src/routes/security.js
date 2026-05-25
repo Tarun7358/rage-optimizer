@@ -6,8 +6,45 @@ const backupService = require('../services/backupService');
 const restoreQueue = require('../services/restoreQueue');
 const { client: botClient } = require('../bot/client');
 
+// Middleware to verify if user has Administrator permissions in the target guild
+const checkGuildAdmin = async (req, res, next) => {
+  const { guildId } = req.params;
+  const userId = req.user.userId;
+  const isAdminUser = req.user.isAdmin; // Global bot developer admin bypass
+
+  if (isAdminUser) return next();
+
+  const liveGuild = botClient.guilds.cache.get(guildId);
+  if (!liveGuild) {
+    const { isFirebaseMock } = require('../config/firebase');
+    if (isFirebaseMock && guildId && guildId.startsWith('mock_')) {
+      return next();
+    }
+    return res.status(404).json({ error: 'Server not found or bot is not present in this server.' });
+  }
+
+  try {
+    const member = await liveGuild.members.fetch(userId).catch(() => null);
+    if (!member) {
+      return res.status(403).json({ error: 'Access Denied: You are not a member of this server.' });
+    }
+
+    const isOwner = liveGuild.ownerId === userId;
+    const isServerAdmin = member.permissions.has('Administrator');
+
+    if (!isOwner && !isServerAdmin) {
+      return res.status(403).json({ error: 'Access Denied: You must be the Server Owner or have Administrator permission.' });
+    }
+
+    next();
+  } catch (err) {
+    console.error('[checkGuildAdmin Error]', err);
+    res.status(500).json({ error: 'Internal validation error.' });
+  }
+};
+
 // GET /api/security/:guildId/backups - List backups
-router.get('/:guildId/backups', authMiddleware, async (req, res) => {
+router.get('/:guildId/backups', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   try {
     const backups = await dbService.getBackups(guildId);
@@ -18,7 +55,7 @@ router.get('/:guildId/backups', authMiddleware, async (req, res) => {
 });
 
 // POST /api/security/:guildId/backups - Trigger manual backup
-router.post('/:guildId/backups', authMiddleware, async (req, res) => {
+router.post('/:guildId/backups', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   const { name } = req.body;
 
@@ -78,7 +115,7 @@ router.post('/:guildId/backups', authMiddleware, async (req, res) => {
 });
 
 // DELETE /api/security/:guildId/backups/:backupId - Delete a backup
-router.delete('/:guildId/backups/:backupId', authMiddleware, async (req, res) => {
+router.delete('/:guildId/backups/:backupId', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId, backupId } = req.params;
 
   try {
@@ -106,7 +143,7 @@ router.delete('/:guildId/backups/:backupId', authMiddleware, async (req, res) =>
 });
 
 // POST /api/security/:guildId/backups/:backupId/restore - Restore server from backup
-router.post('/:guildId/backups/:backupId/restore', authMiddleware, async (req, res) => {
+router.post('/:guildId/backups/:backupId/restore', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId, backupId } = req.params;
 
   try {
@@ -118,19 +155,6 @@ router.post('/:guildId/backups/:backupId/restore', authMiddleware, async (req, r
     const liveGuild = botClient.guilds.cache.get(guildId);
     
     if (liveGuild) {
-      // Validate Permissions: Must be owner or admin
-      const member = await liveGuild.members.fetch(req.user.userId).catch(() => null);
-      if (!member && !req.user.isAdmin) {
-        return res.status(403).json({ error: 'You are not a member of this server.' });
-      }
-
-      const isOwner = liveGuild.ownerId === req.user.userId;
-      const isAdmin = member ? member.permissions.has('Administrator') : false;
-
-      if (!isOwner && !isAdmin && !req.user.isAdmin) {
-        return res.status(403).json({ error: 'Access Denied: Only Guild Owners or server Administrators can perform restores.' });
-      }
-
       // Check active restorations
       if (restoreQueue.isActive(guildId)) {
         return res.status(400).json({ error: 'A restoration is already running for this server.' });
@@ -173,7 +197,7 @@ router.post('/:guildId/backups/:backupId/restore', authMiddleware, async (req, r
 });
 
 // GET /api/security/:guildId/logs - Get Security logs
-router.get('/:guildId/logs', authMiddleware, async (req, res) => {
+router.get('/:guildId/logs', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   try {
     const logs = await dbService.getSecurityLogs(guildId);
@@ -184,7 +208,7 @@ router.get('/:guildId/logs', authMiddleware, async (req, res) => {
 });
 
 // GET /api/security/:guildId/restore-logs - Get restore progress / history logs
-router.get('/:guildId/restore-logs', authMiddleware, async (req, res) => {
+router.get('/:guildId/restore-logs', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   try {
     const logs = await dbService.getRestoreLogs(guildId);

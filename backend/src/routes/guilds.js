@@ -4,8 +4,46 @@ const authMiddleware = require('../middleware/authMiddleware');
 const dbService = require('../services/dbService');
 const { client: botClient } = require('../bot/client');
 
+// Middleware to verify if user has Administrator permissions in the target guild
+const checkGuildAdmin = async (req, res, next) => {
+  const { guildId } = req.params;
+  const userId = req.user.userId;
+  const isAdminUser = req.user.isAdmin; // Global bot developer admin bypass
+
+  if (isAdminUser) return next();
+
+  const liveGuild = botClient.guilds.cache.get(guildId);
+  if (!liveGuild) {
+    // If mock mode is active and it's a mock guild, allow
+    const { isFirebaseMock } = require('../config/firebase');
+    if (isFirebaseMock && guildId && guildId.startsWith('mock_')) {
+      return next();
+    }
+    return res.status(404).json({ error: 'Server not found or bot is not present in this server.' });
+  }
+
+  try {
+    const member = await liveGuild.members.fetch(userId).catch(() => null);
+    if (!member) {
+      return res.status(403).json({ error: 'Access Denied: You are not a member of this server.' });
+    }
+
+    const isOwner = liveGuild.ownerId === userId;
+    const isServerAdmin = member.permissions.has('Administrator');
+
+    if (!isOwner && !isServerAdmin) {
+      return res.status(403).json({ error: 'Access Denied: You must be the Server Owner or have Administrator permission.' });
+    }
+
+    next();
+  } catch (err) {
+    console.error('[checkGuildAdmin Error]', err);
+    res.status(500).json({ error: 'Internal validation error.' });
+  }
+};
+
 // GET /api/guilds/:guildId/settings - Fetch settings + discord metadata (channels/roles)
-router.get('/:guildId/settings', authMiddleware, async (req, res) => {
+router.get('/:guildId/settings', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
 
   try {
@@ -69,7 +107,7 @@ router.get('/:guildId/settings', authMiddleware, async (req, res) => {
 });
 
 // PUT /api/guilds/:guildId/settings - Update guild settings
-router.put('/:guildId/settings', authMiddleware, async (req, res) => {
+router.put('/:guildId/settings', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   const updateData = req.body;
 
@@ -90,7 +128,7 @@ router.put('/:guildId/settings', authMiddleware, async (req, res) => {
 });
 
 // GET /api/guilds/:guildId/warnings - Fetch warnings list
-router.get('/:guildId/warnings', authMiddleware, async (req, res) => {
+router.get('/:guildId/warnings', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   try {
     const warnings = await dbService.getWarnings(guildId);
@@ -101,7 +139,7 @@ router.get('/:guildId/warnings', authMiddleware, async (req, res) => {
 });
 
 // POST /api/guilds/:guildId/warnings - Manual warning addition
-router.post('/:guildId/warnings', authMiddleware, async (req, res) => {
+router.post('/:guildId/warnings', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   const { userId, userName, reason } = req.body;
   
@@ -122,7 +160,7 @@ router.post('/:guildId/warnings', authMiddleware, async (req, res) => {
 });
 
 // DELETE /api/guilds/:guildId/warnings/:warnId - Delete/pardon warning
-router.delete('/:guildId/warnings/:warnId', authMiddleware, async (req, res) => {
+router.delete('/:guildId/warnings/:warnId', authMiddleware, checkGuildAdmin, async (req, res) => {
   const { guildId, warnId } = req.params;
   try {
     await dbService.deleteWarning(guildId, warnId);

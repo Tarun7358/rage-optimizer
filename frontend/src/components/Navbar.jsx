@@ -93,7 +93,11 @@ export default function Navbar() {
               className="bg-[#14141c] border border-white/10 text-white rounded-lg text-xs px-3 py-1.5 focus:outline-none focus:border-accentRed/60 cursor-pointer"
             >
               <option value="all">Switch server...</option>
-              {guilds.filter(g => g.botJoined).map(g => (
+              {guilds.filter(g => {
+                const permInt = parseInt(g.permissions || '0');
+                const isAdmin = g.owner || (permInt & 0x8) === 0x8;
+                return g.botJoined && isAdmin;
+              }).map(g => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
             </select>
