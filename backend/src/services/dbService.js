@@ -63,6 +63,36 @@ const getDefaultSettings = (guildId) => ({
     enabled: false,
     channelId: '',
     categoryParent: ''
+  },
+  serverLogs: {
+    enabled: false,
+    channelId: '',
+    splitEvents: false,
+    channelSpecific: [],
+    events: {
+      messageDelete: false,
+      messageEdit: false,
+      messageDeleteBulk: false,
+      trackInvites: false,
+      messagePin: false,
+      messageUnpin: false,
+      memberJoin: false,
+      memberLeave: false,
+      roleGiven: false,
+      roleRemoved: false,
+    },
+    eventChannels: {
+      messageDelete: '',
+      messageEdit: '',
+      messageDeleteBulk: '',
+      trackInvites: '',
+      messagePin: '',
+      messageUnpin: '',
+      memberJoin: '',
+      memberLeave: '',
+      roleGiven: '',
+      roleRemoved: '',
+    }
   }
 });
 

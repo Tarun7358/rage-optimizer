@@ -86,5 +86,23 @@ module.exports = {
         console.warn(`[Auto-Nick Error] Failed to change nickname for ${member.user.username}:`, err.message);
       });
     }
+
+    // 5. Server Logs - Member Joined
+    try {
+      const loggerService = require('../../services/loggerService');
+      const embed = new EmbedBuilder()
+        .setColor('#00ffaa')
+        .setTitle('📥 Member Joined')
+        .setAuthor({
+          name: `${member.user.username} (${member.user.id})`,
+          iconURL: member.user.displayAvatarURL({ forceStatic: false })
+        })
+        .setDescription(`<@${member.user.id}> joined the server.`)
+        .setTimestamp();
+      
+      await loggerService.sendLog(guild, 'memberJoin', null, embed);
+    } catch (err) {
+      console.warn('[Logger Event Error] Failed to log member join:', err.message);
+    }
   }
 };

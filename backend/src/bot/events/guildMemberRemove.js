@@ -41,5 +41,23 @@ module.exports = {
         await channel.send({ embeds: [leaveEmbed] }).catch(err => console.error('[Leave Error] Failed to send leave message:', err));
       }
     }
+
+    // Server Logs - Member Left
+    try {
+      const loggerService = require('../../services/loggerService');
+      const embed = new EmbedBuilder()
+        .setColor('#ff003c')
+        .setTitle('📤 Member Left')
+        .setAuthor({
+          name: `${member.user.username} (${member.user.id})`,
+          iconURL: member.user.displayAvatarURL({ forceStatic: false })
+        })
+        .setDescription(`<@${member.user.id}> left the server.`)
+        .setTimestamp();
+      
+      await loggerService.sendLog(guild, 'memberLeave', null, embed);
+    } catch (err) {
+      console.warn('[Logger Event Error] Failed to log member leave:', err.message);
+    }
   }
 };

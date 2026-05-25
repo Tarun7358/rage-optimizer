@@ -18,8 +18,38 @@ module.exports = {
     } catch (err) {
       return;
     }
+
+    if (!settings) return;
+
+    // Track Invite Link Posts
+    const inviteRegex = /(https?:\/\/)?(www\.)?(discord\.(gg|io|me|li)|discordapp\.com\/invite)\/[a-zA-Z0-9]+/i;
+    if (inviteRegex.test(content)) {
+      try {
+        const loggerService = require('../../services/loggerService');
+        const match = content.match(inviteRegex);
+        const inviteCode = match ? match[0] : 'Invite Link';
+
+        const embed = new EmbedBuilder()
+          .setColor('#9900ff')
+          .setTitle('🔗 Invite Link Posted')
+          .setAuthor({
+            name: `${author.username} (${author.id})`,
+            iconURL: author.displayAvatarURL({ forceStatic: false })
+          })
+          .addFields(
+            { name: 'Channel', value: `<#${channel.id}>`, inline: true },
+            { name: 'User', value: `<@${author.id}>`, inline: true },
+            { name: 'Link Detected', value: inviteCode }
+          )
+          .setTimestamp();
+
+        await loggerService.sendLog(guild, 'trackInvites', channel.id, embed);
+      } catch (err) {
+        console.warn('[Logger Event Error] Failed to log invite link:', err.message);
+      }
+    }
     
-    if (!settings || !settings.moderation || !settings.moderation.autoMod) return;
+    if (!settings.moderation || !settings.moderation.autoMod) return;
 
     const modConfig = settings.moderation;
 
