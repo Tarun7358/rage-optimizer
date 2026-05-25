@@ -202,4 +202,126 @@ router.get('/:guildId/restore-logs', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/security/clone - Clone server structures
+router.post('/clone', authMiddleware, async (req, res) => {
+  const { sourceGuildId, targetGuildId, backupId, templateId } = req.body;
+  
+  if (!targetGuildId) {
+    return res.status(400).json({ error: 'Target Guild ID is required.' });
+  }
+
+  try {
+    const liveTarget = botClient.guilds.cache.get(targetGuildId);
+    
+    // Check target permission
+    if (liveTarget) {
+      const member = await liveTarget.members.fetch(req.user.userId).catch(() => null);
+      if (!member && !req.user.isAdmin) {
+        return res.status(403).json({ error: 'You are not a member of the target server.' });
+      }
+      
+      const isOwner = liveTarget.ownerId === req.user.userId;
+      const isAdmin = member ? member.permissions.has('Administrator') : false;
+      if (!isOwner && !isAdmin && !req.user.isAdmin) {
+        return res.status(403).json({ error: 'Access Denied: You must be the target server Owner or Administrator.' });
+      }
+
+      if (restoreQueue.isActive(targetGuildId)) {
+        return res.status(400).json({ error: 'Target server is already running a clone or restore operation.' });
+      }
+    }
+
+    let backupData = null;
+    let label = 'Configuration Clone';
+
+    // 1. Source: Live Server
+    if (sourceGuildId) {
+      const liveSource = botClient.guilds.cache.get(sourceGuildId);
+      if (!liveSource) {
+        // If mock
+        const isFirebaseMock = require('../config/firebase').isFirebaseMock;
+        if (isFirebaseMock && sourceGuildId.startsWith('mock_')) {
+          backupData = {
+            serverSettings: { name: 'Mock Source Clone' },
+            roles: [{ name: 'Cloned Admin', permissions: '8', color: 16711680 }],
+            categories: [{ name: 'Cloned Category' }],
+            channels: [{ name: 'cloned-text', type: 0 }, { name: 'cloned-voice', type: 2 }],
+            emojis: []
+          };
+        } else {
+          return res.status(404).json({ error: 'Source server bot is not active or server not found.' });
+        }
+      } else {
+        // Check source permissions
+        const srcMember = await liveSource.members.fetch(req.user.userId).catch(() => null);
+        if (!srcMember && !req.user.isAdmin) {
+          return res.status(403).json({ error: 'You are not a member of the source server.' });
+        }
+        const isSrcOwner = liveSource.ownerId === req.user.userId;
+        const isSrcAdmin = srcMember ? srcMember.permissions.has('Administrator') : false;
+        if (!isSrcOwner && !isSrcAdmin && !req.user.isAdmin) {
+          return res.status(403).json({ error: 'Access Denied: You must have admin access to the source server to extract layout.' });
+        }
+
+        backupData = await backupService.captureGuild(liveSource);
+        label = `Cloned from Server: ${liveSource.name}`;
+      }
+    }
+    // 2. Source: Backup Snapshot
+    else if (backupId) {
+      const backup = await dbService.getBackupById(req.body.sourceGuildId || targetGuildId, backupId);
+      if (!backup) {
+        return res.status(404).json({ error: 'Source backup snapshot not found.' });
+      }
+      backupData = backup.backupData || backup;
+      label = `Cloned from Backup: ${backup.backupName || backup.name}`;
+    }
+    // 3. Source: Template Marketplace
+    else if (templateId) {
+      const template = await dbService.getTemplateById(templateId);
+      if (!template) {
+        return res.status(404).json({ error: 'Source template layout not found.' });
+      }
+      backupData = template.backupData;
+      label = `Cloned from Template: ${template.name}`;
+      
+      // Update template install count
+      await dbService.updateTemplate(templateId, {
+        installCount: (template.installCount || 0) + 1,
+        downloadCount: (template.downloadCount || 0) + 1
+      });
+    } else {
+      return res.status(400).json({ error: 'Please specify a source (Server, Backup, or Template) to clone.' });
+    }
+
+    if (liveTarget) {
+      // Trigger restoration queue
+      await restoreQueue.startRestore(liveTarget, backupData, {
+        id: req.user.userId,
+        username: req.user.username
+      });
+    } else {
+      // Mock simulation mode
+      const isFirebaseMock = require('../config/firebase').isFirebaseMock;
+      if (isFirebaseMock) {
+        await dbService.addRestoreLog(targetGuildId, {
+          action: 'RESTORE_APPLY',
+          executorId: req.user.userId,
+          executorName: req.user.username,
+          status: 'success',
+          details: `[MOCK MODE] Simulation cloning of layout: ${label} into ${targetGuildId}.`
+        });
+      } else {
+        return res.status(404).json({ error: 'Rage Optimizer Bot is not active on target server.' });
+      }
+    }
+
+    res.json({ success: true, message: 'Server cloning process has been queued successfully. Recreating structure...' });
+
+  } catch (error) {
+    console.error('[Cloner API Error]', error);
+    res.status(500).json({ error: error.message || 'Failed to initialize server cloning.' });
+  }
+});
+
 module.exports = router;

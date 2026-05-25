@@ -9,6 +9,7 @@ import WelcomeDash from './pages/WelcomeDash';
 import ModDash from './pages/ModDash';
 import TicketDash from './pages/TicketDash';
 import SecurityDash from './pages/SecurityDash';
+import ClonerDash from './pages/ClonerDash';
 import NotificationDash from './pages/NotificationDash';
 import AdminPanel from './pages/AdminPanel';
 
@@ -89,6 +90,11 @@ function MainAppLayout() {
         <Route path="/security/:guildId" element={
           <ProtectedRoute>
             <SecurityDash />
+          </ProtectedRoute>
+        } />
+        <Route path="/cloner/:guildId" element={
+          <ProtectedRoute>
+            <ClonerDash />
           </ProtectedRoute>
         } />
         <Route path="/notifications/:guildId" element={

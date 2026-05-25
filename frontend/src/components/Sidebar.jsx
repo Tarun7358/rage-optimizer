@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useParams, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, UserPlus, Shield, Ticket, Lock, Bell, Settings,
-  ChevronRight, ExternalLink
+  ChevronRight, ExternalLink, RefreshCw
 } from 'lucide-react';
 import { useAuth, BOT_INVITE_URL } from '../context/AuthContext';
 
@@ -19,6 +19,7 @@ export default function Sidebar() {
     { name: 'Auto Moderation', path: `/moderation/${guildId}`, icon: Shield },
     { name: 'Ticket System', path: `/tickets/${guildId}`, icon: Ticket },
     { name: 'Security & Anti-Nuke', path: `/security/${guildId}`, icon: Lock },
+    { name: 'Server Cloner', path: `/cloner/${guildId}`, icon: RefreshCw },
     { name: 'Media Notifications', path: `/notifications/${guildId}`, icon: Bell },
   ];
 
