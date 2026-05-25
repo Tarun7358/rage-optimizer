@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const dbService = require('../services/dbService');
-const { client: botClient } = require('../bot/client');
+const getBotClient = () => require('../bot/client').client;
 
 // Middleware to verify if user has Administrator permissions in the target guild
 const checkGuildAdmin = async (req, res, next) => {
@@ -12,7 +12,7 @@ const checkGuildAdmin = async (req, res, next) => {
 
   if (isAdminUser) return next();
 
-  const liveGuild = botClient.guilds.cache.get(guildId);
+  const liveGuild = getBotClient().guilds.cache.get(guildId);
   if (!liveGuild) {
     // If mock mode is active and it's a mock guild, allow
     const { isFirebaseMock } = require('../config/firebase');
@@ -54,7 +54,7 @@ router.get('/:guildId/settings', authMiddleware, checkGuildAdmin, async (req, re
     let roles = [];
     let name = "Rage Guild";
 
-    const liveGuild = botClient.guilds.cache.get(guildId);
+    const liveGuild = getBotClient().guilds.cache.get(guildId);
     if (liveGuild) {
       name = liveGuild.name;
       

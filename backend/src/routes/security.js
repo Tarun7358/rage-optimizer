@@ -4,7 +4,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const dbService = require('../services/dbService');
 const backupService = require('../services/backupService');
 const restoreQueue = require('../services/restoreQueue');
-const { client: botClient } = require('../bot/client');
+const getBotClient = () => require('../bot/client').client;
 
 // Middleware to verify if user has Administrator permissions in the target guild
 const checkGuildAdmin = async (req, res, next) => {
@@ -14,7 +14,7 @@ const checkGuildAdmin = async (req, res, next) => {
 
   if (isAdminUser) return next();
 
-  const liveGuild = botClient.guilds.cache.get(guildId);
+  const liveGuild = getBotClient().guilds.cache.get(guildId);
   if (!liveGuild) {
     const { isFirebaseMock } = require('../config/firebase');
     if (isFirebaseMock && guildId && guildId.startsWith('mock_')) {
@@ -61,7 +61,7 @@ router.post('/:guildId/backups', authMiddleware, checkGuildAdmin, async (req, re
 
   try {
     const backupId = 'RAGE_' + Math.random().toString(36).substring(2, 10).toUpperCase();
-    const liveGuild = botClient.guilds.cache.get(guildId);
+    const liveGuild = getBotClient().guilds.cache.get(guildId);
     
     let captured = null;
     if (liveGuild) {
@@ -152,7 +152,7 @@ router.post('/:guildId/backups/:backupId/restore', authMiddleware, checkGuildAdm
       return res.status(404).json({ error: 'Backup not found' });
     }
 
-    const liveGuild = botClient.guilds.cache.get(guildId);
+    const liveGuild = getBotClient().guilds.cache.get(guildId);
     
     if (liveGuild) {
       // Check active restorations
@@ -235,7 +235,7 @@ router.post('/clone', authMiddleware, async (req, res) => {
   }
 
   try {
-    const liveTarget = botClient.guilds.cache.get(targetGuildId);
+    const liveTarget = getBotClient().guilds.cache.get(targetGuildId);
     
     // Check target permission
     if (liveTarget) {
@@ -260,7 +260,7 @@ router.post('/clone', authMiddleware, async (req, res) => {
 
     // 1. Source: Live Server
     if (sourceGuildId) {
-      const liveSource = botClient.guilds.cache.get(sourceGuildId);
+      const liveSource = getBotClient().guilds.cache.get(sourceGuildId);
       if (!liveSource) {
         // If mock
         const isFirebaseMock = require('../config/firebase').isFirebaseMock;
