@@ -47,6 +47,7 @@ try {
 
   admin.initializeApp(config);
   db = admin.firestore();
+  db.settings({ ignoreUndefinedProperties: true });
   rtdb = admin.database();
   auth = admin.auth();
   storage = admin.storage();

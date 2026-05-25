@@ -186,6 +186,30 @@ module.exports = {
 
         await dbService.updateTicket(ticket._id, updateFields);
 
+        // Send transcript log to logChannelId (non-blocking)
+        try {
+          const settings = await dbService.getGuildSettings(guild.id);
+          const logChannelId = settings?.tickets?.logChannelId;
+          if (logChannelId) {
+            const logChannel = guild.channels.cache.get(logChannelId);
+            if (logChannel) {
+              const logEmbed = new EmbedBuilder()
+                .setColor('#ff003c')
+                .setTitle('🎫 Ticket Closed & Archived')
+                .addFields(
+                  { name: 'Ticket User', value: `${ticket.userName} (<@${ticket.userId}>)`, inline: true },
+                  { name: 'Category', value: ticket.category?.toUpperCase() || 'SUPPORT', inline: true },
+                  { name: 'Closed By', value: `${user.username} (<@${user.id}>)`, inline: true },
+                  { name: 'Transcript', value: updateFields.transcriptUrl ? `[View Transcript](${updateFields.transcriptUrl})` : '*None*' }
+                )
+                .setTimestamp();
+              await logChannel.send({ embeds: [logEmbed] }).catch(() => {});
+            }
+          }
+        } catch (err) {
+          console.error('[Ticket Log Error]', err);
+        }
+
         const closeEmbed = new EmbedBuilder()
           .setColor('#ff003c')
           .setTitle('🔒 Ticket Closed')

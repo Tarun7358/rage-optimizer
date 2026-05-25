@@ -24,6 +24,11 @@ export default function TicketDash() {
   const [publishChannel, setPublishChannel] = useState('');
   const [saveStatus, setSaveStatus] = useState('');
   const [publishStatus, setPublishStatus] = useState('');
+  
+  // Custom Ticket Panel Embed State
+  const [panelTitle, setPanelTitle] = useState('🎫 Support Ticket Panel');
+  const [panelDescription, setPanelDescription] = useState('Choose a category below to open a ticket with the Staff.');
+  const [panelColor, setPanelColor] = useState('#ff003c');
 
   const recalculateStats = (list) => {
     const total = list.length;
@@ -157,6 +162,7 @@ export default function TicketDash() {
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (err) {
       setSaveStatus('Error saving');
+      setTimeout(() => setSaveStatus(''), 3000);
     }
   };
 
@@ -164,12 +170,18 @@ export default function TicketDash() {
     if (!publishChannel) return;
     setPublishStatus('Deploying...');
     try {
-      // Simulate sending mock slash commands from backend
-      // In live bot, this sends interactive buttons directly to the channel
+      await axios.post(`${backendUrl}/api/tickets/${guildId}/publish`, {
+        channelId: publishChannel,
+        title: panelTitle,
+        description: panelDescription,
+        color: panelColor
+      });
       setPublishStatus('Deployed Successfully!');
       setTimeout(() => setPublishStatus(''), 4000);
     } catch (err) {
+      console.error(err);
       setPublishStatus('Deployment Error');
+      setTimeout(() => setPublishStatus(''), 4000);
     }
   };
 
@@ -232,11 +244,11 @@ export default function TicketDash() {
                       <h3 className="font-gaming font-bold text-white uppercase text-md">General Settings</h3>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-textGray uppercase mb-1.5 font-gaming">Tickets Category Parent</label>
                         <select
-                          value={settings.tickets.categoryParent}
+                          value={settings.tickets.categoryParent || ''}
                           onChange={(e) => handleChange('categoryParent', e.target.value)}
                           className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-sm p-2.5 focus:outline-none focus:border-accentRed"
                         >
@@ -244,6 +256,21 @@ export default function TicketDash() {
                           {/* Fetch categories only (type === 4 represents categories) */}
                           {channels.filter(c => c.type === 4).map(c => (
                             <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-textGray uppercase mb-1.5 font-gaming">Ticket Log Channel</label>
+                        <select
+                          value={settings.tickets.logChannelId || ''}
+                          onChange={(e) => handleChange('logChannelId', e.target.value)}
+                          className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-sm p-2.5 focus:outline-none focus:border-accentRed"
+                        >
+                          <option value="">No Log Channel</option>
+                          {/* Fetch text channels only (type === 0 represents text) */}
+                          {channels.filter(c => c.type === 0).map(c => (
+                            <option key={c.id} value={c.id}>#{c.name}</option>
                           ))}
                         </select>
                       </div>
@@ -297,6 +324,65 @@ export default function TicketDash() {
                           })}
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Panel Customization (Koya-Style) */}
+                  <div className="glass-card p-6 rounded-xl border-borderColor/20 space-y-6">
+                    <div className="flex items-center space-x-3 pb-3 border-b border-white/5">
+                      <Save className="w-5 h-5 text-accentRed" />
+                      <h3 className="font-gaming font-bold text-white uppercase text-md">Embed Customization</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-textGray uppercase mb-1.5 font-gaming">Embed Title</label>
+                        <input
+                          type="text"
+                          value={panelTitle}
+                          onChange={(e) => setPanelTitle(e.target.value)}
+                          placeholder="🎫 Support Ticket Panel"
+                          className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-sm p-2.5 focus:outline-none focus:border-accentRed"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-textGray uppercase mb-1.5 font-gaming">Embed Accent Color (HEX)</label>
+                        <div className="flex space-x-2">
+                          <input
+                            type="color"
+                            value={panelColor}
+                            onChange={(e) => setPanelColor(e.target.value)}
+                            className="bg-transparent border-0 cursor-pointer w-10 h-10 p-0 rounded-lg"
+                          />
+                          <input
+                            type="text"
+                            value={panelColor}
+                            onChange={(e) => setPanelColor(e.target.value)}
+                            className="flex-1 bg-white/5 border border-borderColor text-white rounded-xl text-sm p-2.5 focus:outline-none focus:border-accentRed"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-textGray uppercase mb-1.5 font-gaming">Embed Description</label>
+                        <textarea
+                          value={panelDescription}
+                          onChange={(e) => setPanelDescription(e.target.value)}
+                          rows={3}
+                          placeholder="Choose a category below to open a ticket with the Staff."
+                          className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-sm p-2.5 focus:outline-none focus:border-accentRed"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Live Preview */}
+                    <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-2">
+                      <span className="text-[10px] text-textGray font-semibold uppercase tracking-wider">Interactive Live Preview</span>
+                      <div className="border-l-4 rounded-r p-3 bg-[#18191d]" style={{ borderColor: panelColor }}>
+                        <div className="font-semibold text-white text-sm">{panelTitle || '🎫 Support Ticket Panel'}</div>
+                        <div className="text-xs text-textGray mt-1 whitespace-pre-wrap">{panelDescription || 'Choose a category below to open a ticket with the Staff.'}</div>
+                      </div>
                     </div>
                   </div>
 

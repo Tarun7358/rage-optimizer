@@ -71,5 +71,18 @@ module.exports = {
         }
       }
     }
+    
+    // 4. Auto-Nick (Koya Feature)
+    if (settings.autoNick && settings.autoNick.enabled && settings.autoNick.format) {
+      const newNick = settings.autoNick.format
+        .replace(/{username}/g, member.user.username)
+        .replace(/{tag}/g, member.user.tag)
+        .replace(/{server}/g, guild.name);
+      
+      const trimmedNick = newNick.slice(0, 32);
+      await member.setNickname(trimmedNick).catch(err => {
+        console.warn(`[Auto-Nick Error] Failed to change nickname for ${member.user.username}:`, err.message);
+      });
+    }
   }
 };

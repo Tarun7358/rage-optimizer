@@ -234,4 +234,56 @@ function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
+// POST /api/tickets/:guildId/publish - Publish ticket panel to a channel
+router.post('/:guildId/publish', authMiddleware, checkGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { channelId, title, description, color } = req.body;
+
+  if (!channelId) {
+    return res.status(400).json({ error: 'Target channel is required.' });
+  }
+
+  try {
+    const liveGuild = getBotClient().guilds.cache.get(guildId);
+    if (!liveGuild) {
+      const { isFirebaseMock } = require('../config/firebase');
+      if (isFirebaseMock && guildId.startsWith('mock_')) {
+        return res.json({ success: true, message: 'Ticket selection card successfully published (MOCK)!' });
+      }
+      return res.status(404).json({ error: 'Rage Optimizer Bot is not active in this server.' });
+    }
+
+    const channel = liveGuild.channels.cache.get(channelId);
+    if (!channel) {
+      return res.status(404).json({ error: 'Target channel not found.' });
+    }
+
+    const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
+    const embed = new EmbedBuilder()
+      .setColor(color || '#ff003c')
+      .setTitle(title || '🎫 Support Ticket Panel')
+      .setDescription(description || 'Choose a category below to open a ticket with the Staff.');
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('ticket_open:support').setLabel('General Support').setStyle(ButtonStyle.Primary).setEmoji('🛠️'),
+      new ButtonBuilder().setCustomId('ticket_open:optimization').setLabel('Optimization').setStyle(ButtonStyle.Success).setEmoji('⚡'),
+      new ButtonBuilder().setCustomId('ticket_open:sensi').setLabel('Sensitivities').setStyle(ButtonStyle.Secondary).setEmoji('🎯'),
+      new ButtonBuilder().setCustomId('ticket_open:buy').setLabel('Purchase').setStyle(ButtonStyle.Primary).setEmoji('🛒'),
+      new ButtonBuilder().setCustomId('ticket_open:scam').setLabel('Report Scam').setStyle(ButtonStyle.Danger).setEmoji('⚠️')
+    );
+
+    await channel.send({
+      embeds: [embed],
+      components: [row]
+    });
+
+    res.json({ success: true, message: 'Ticket panel successfully deployed!' });
+
+  } catch (error) {
+    console.error('[Ticket Publish Error]', error);
+    res.status(500).json({ error: 'Failed to deploy ticket panel: ' + error.message });
+  }
+});
+
 module.exports = router;

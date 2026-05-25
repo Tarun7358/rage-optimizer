@@ -42,6 +42,7 @@ const getDefaultSettings = (guildId) => ({
   tickets: {
     enabled: true,
     categoryParent: '',
+    logChannelId: '',
     staffRoles: ['role_staff']
   },
   security: {
@@ -53,6 +54,15 @@ const getDefaultSettings = (guildId) => ({
     youtube: [],
     twitch: [],
     instagram: []
+  },
+  autoNick: {
+    enabled: false,
+    format: '[RAGE] {username}'
+  },
+  tempVoice: {
+    enabled: false,
+    channelId: '',
+    categoryParent: ''
   }
 });
 
@@ -85,11 +95,11 @@ const dbService = {
 
     await db.collection('guildSettings').doc(guildId).set(settings, { merge: true });
     
-    // Sync settings in realtime database
-    try {
-      await rtdb.ref(`guilds/${guildId}/settings`).set(settings);
-    } catch (err) {
-      console.warn('[Firebase RTDB Error] Failed to update live settings sync', err.message);
+    // Sync settings in realtime database (non-blocking)
+    if (rtdb) {
+      rtdb.ref(`guilds/${guildId}/settings`).set(settings).catch(err => {
+        console.warn('[Firebase RTDB Error] Failed to update live settings sync', err.message);
+      });
     }
     
     return settings;
@@ -128,14 +138,14 @@ const dbService = {
     } else {
       const docRef = await db.collection('warnings').add(formatted);
       
-      // Sync warning alert to Realtime Database
-      try {
-        await rtdb.ref(`guilds/${guildId}/liveLogs`).push({
+      // Sync warning alert to Realtime Database (non-blocking)
+      if (rtdb) {
+        rtdb.ref(`guilds/${guildId}/liveLogs`).push({
           type: 'WARN',
           details: `User ${warnData.userName} warned for: ${warnData.reason}`,
           timestamp: new Date().toISOString()
-        });
-      } catch (err) {}
+        }).catch(() => {});
+      }
       result = { _id: docRef.id, ...formatted };
     }
 
@@ -249,10 +259,10 @@ const dbService = {
     } else {
       const docRef = await db.collection('tickets').add(formatted);
 
-      // Sync in Realtime Database for instant ticket updates
-      try {
-        await rtdb.ref(`guilds/${guildId}/tickets/${docRef.id}`).set(formatted);
-      } catch (err) {}
+      // Sync in Realtime Database for instant ticket updates (non-blocking)
+      if (rtdb) {
+        rtdb.ref(`guilds/${guildId}/tickets/${docRef.id}`).set(formatted).catch(() => {});
+      }
 
       result = { _id: docRef.id, ...formatted };
     }
@@ -281,9 +291,9 @@ const dbService = {
       const updatedDoc = await db.collection('tickets').doc(ticketId).get();
       const updated = updatedDoc.data();
       if (updated) {
-        try {
-          await rtdb.ref(`guilds/${updated.guildId}/tickets/${ticketId}`).set(updated);
-        } catch (err) {}
+        if (rtdb) {
+          rtdb.ref(`guilds/${updated.guildId}/tickets/${ticketId}`).set(updated).catch(() => {});
+        }
         result = { _id: ticketId, ...updated };
       }
     }
@@ -710,7 +720,6 @@ const dbService = {
 
     const snapshot = await db.collection('securityLogs')
       .where('guildId', '==', guildId)
-      .orderBy('createdAt', 'desc')
       .limit(100)
       .get();
     
@@ -718,7 +727,7 @@ const dbService = {
     snapshot.forEach(doc => {
       list.push({ _id: doc.id, ...doc.data() });
     });
-    return list;
+    return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
   addSecurityLog: async (guildId, logData) => {
@@ -740,10 +749,10 @@ const dbService = {
     } else {
       const docRef = await db.collection('securityLogs').add(formatted);
       
-      // Sync live log warning to Realtime Database
-      try {
-        await rtdb.ref(`guilds/${guildId}/liveLogs`).push(formatted);
-      } catch (err) {}
+      // Sync live log warning to Realtime Database (non-blocking)
+      if (rtdb) {
+        rtdb.ref(`guilds/${guildId}/liveLogs`).push(formatted).catch(() => {});
+      }
 
       result = { _id: docRef.id, ...formatted };
     }

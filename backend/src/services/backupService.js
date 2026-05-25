@@ -37,24 +37,25 @@ const backupService = {
     // 3. Channels and Categories
     const categories = [];
     const channels = [];
-
     guild.channels.cache.forEach(channel => {
       const overwrites = [];
-      channel.permissionOverwrites.cache.forEach(ow => {
-        overwrites.push({
-          id: ow.id,
-          type: ow.type, // 0 = role, 1 = member
-          allow: ow.allow.bitfield.toString(),
-          deny: ow.deny.bitfield.toString()
+      if (channel.permissionOverwrites && channel.permissionOverwrites.cache) {
+        channel.permissionOverwrites.cache.forEach(ow => {
+          overwrites.push({
+            id: ow.id,
+            type: ow.type, // 0 = role, 1 = member
+            allow: ow.allow?.bitfield?.toString() || '0',
+            deny: ow.deny?.bitfield?.toString() || '0'
+          });
         });
-      });
+      }
 
       const channelInfo = {
-        id: channel.id,
-        name: channel.name,
+        id: channel.id || '',
+        name: channel.name || '',
         type: channel.type,
-        parentId: channel.parentId,
-        position: channel.position,
+        parentId: channel.parentId || null,
+        position: channel.position || 0,
         topic: channel.topic || '',
         nsfw: channel.nsfw || false,
         rateLimitPerUser: channel.rateLimitPerUser || 0,

@@ -4,7 +4,7 @@ import Sidebar from '../components/Sidebar';
 import EmbedBuilder from '../components/EmbedBuilder';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Save, UserPlus, FileText, CheckSquare, Plus, Trash2 } from 'lucide-react';
+import { Save, UserPlus, FileText, CheckSquare, Plus, Trash2, UserCheck, Mic } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { ref, onValue } from 'firebase/database';
 import { rtdb, isMock } from '../config/firebase';
@@ -81,6 +81,26 @@ export default function WelcomeDash() {
     }));
   };
 
+  const handleAutoNickChange = (field, val) => {
+    setSettings(prev => ({
+      ...prev,
+      autoNick: {
+        ...(prev.autoNick || { enabled: false, format: '[RAGE] {username}' }),
+        [field]: val
+      }
+    }));
+  };
+
+  const handleTempVoiceChange = (field, val) => {
+    setSettings(prev => ({
+      ...prev,
+      tempVoice: {
+        ...(prev.tempVoice || { enabled: false, channelId: '', categoryParent: '' }),
+        [field]: val
+      }
+    }));
+  };
+
   const handleEmbedChange = (newEmbed) => {
     setSettings(prev => ({
       ...prev,
@@ -123,6 +143,7 @@ export default function WelcomeDash() {
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (err) {
       setSaveStatus('Error saving');
+      setTimeout(() => setSaveStatus(''), 3000);
     }
   };
 
@@ -356,6 +377,113 @@ export default function WelcomeDash() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Auto-Nick Configuration */}
+            <div className="glass-card p-6 rounded-xl border-borderColor/20 space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                <div className="flex items-center space-x-3">
+                  <UserCheck className="w-5 h-5 text-accentRed" />
+                  <h3 className="font-gaming font-bold text-white uppercase text-md">Auto Nickname</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAutoNickChange('enabled', !(settings.autoNick?.enabled))}
+                  className={`w-12 h-6.5 rounded-full p-1 transition-all duration-300 ${
+                    settings.autoNick?.enabled ? 'bg-accentRed' : 'bg-white/10'
+                  }`}
+                >
+                  <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-all duration-300 ${
+                    settings.autoNick?.enabled ? 'translate-x-5.5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+
+              {settings.autoNick?.enabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-semibold text-textGray uppercase mb-1.5 font-gaming">Nickname Template Format</label>
+                    <input
+                      type="text"
+                      value={settings.autoNick?.format || ''}
+                      onChange={(e) => handleAutoNickChange('format', e.target.value)}
+                      placeholder="e.g. [RAGE] {username}"
+                      className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-sm p-2.5 focus:outline-none focus:border-accentRed"
+                    />
+                    <p className="text-[10px] text-textGray mt-1.5 leading-relaxed">
+                      Customise how the user's name will appear. Supported placeholders: <code className="text-accentRed font-semibold">{`{username}`}</code>, <code className="text-accentRed font-semibold">{`{tag}`}</code>, <code className="text-accentRed font-semibold">{`{server}`}</code>.
+                    </p>
+                  </div>
+
+                  <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 flex flex-col justify-center">
+                    <span className="text-[10px] text-textGray font-semibold uppercase tracking-wider mb-2">Nickname Live Preview</span>
+                    <div className="bg-[#18191d] border border-borderColor/40 rounded-lg p-3 text-xs text-white">
+                      <span className="text-textGray">Before:</span> <span className="font-semibold">Tarun7358</span>
+                      <div className="border-t border-white/5 my-1.5" />
+                      <span className="text-textGray">After:</span> <span className="font-semibold text-accentRed">{(settings.autoNick?.format || '[RAGE] {username}').replace('{username}', 'Tarun7358').replace('{tag}', 'Tarun7358#1234').replace('{server}', guildName || 'Rage Optimizer')}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Temporary Voice Configuration */}
+            <div className="glass-card p-6 rounded-xl border-borderColor/20 space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                <div className="flex items-center space-x-3">
+                  <Mic className="w-5 h-5 text-accentRed" />
+                  <h3 className="font-gaming font-bold text-white uppercase text-md">Temporary Voice Channels</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTempVoiceChange('enabled', !(settings.tempVoice?.enabled))}
+                  className={`w-12 h-6.5 rounded-full p-1 transition-all duration-300 ${
+                    settings.tempVoice?.enabled ? 'bg-accentRed' : 'bg-white/10'
+                  }`}
+                >
+                  <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-all duration-300 ${
+                    settings.tempVoice?.enabled ? 'translate-x-5.5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+
+              {settings.tempVoice?.enabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-semibold text-textGray uppercase mb-1.5 font-gaming">"Join to Create" Channel</label>
+                    <select
+                      value={settings.tempVoice?.channelId || ''}
+                      onChange={(e) => handleTempVoiceChange('channelId', e.target.value)}
+                      className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-sm p-2.5 focus:outline-none focus:border-accentRed"
+                    >
+                      <option value="">Select Voice Channel...</option>
+                      {channels.filter(c => c.type === 2).map(c => (
+                        <option key={c.id} value={c.id}>🔊 {c.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-textGray mt-1.5">
+                      When a user joins this channel, the bot will dynamically generate a temporary VC for them.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-textGray uppercase mb-1.5 font-gaming">Category Parent (Optional)</label>
+                    <select
+                      value={settings.tempVoice?.categoryParent || ''}
+                      onChange={(e) => handleTempVoiceChange('categoryParent', e.target.value)}
+                      className="w-full bg-white/5 border border-borderColor text-white rounded-xl text-sm p-2.5 focus:outline-none focus:border-accentRed"
+                    >
+                      <option value="">Create in Root</option>
+                      {channels.filter(c => c.type === 4).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-textGray mt-1.5">
+                      The Discord category folder where new temporary voice channels should be spawned.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

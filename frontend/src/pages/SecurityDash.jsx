@@ -212,6 +212,7 @@ export default function SecurityDash() {
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (err) {
       setSaveStatus('Error saving');
+      setTimeout(() => setSaveStatus(''), 3000);
     }
   };
 
@@ -226,6 +227,7 @@ export default function SecurityDash() {
       fetchData();
     } catch (err) {
       setBackupStatus('Failed to backup');
+      setTimeout(() => setBackupStatus(''), 3000);
     }
   };
 
