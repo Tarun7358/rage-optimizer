@@ -67,6 +67,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/guilds', require('./routes/guilds'));
 app.use('/api/tickets', require('./routes/tickets'));
 app.use('/api/security', require('./routes/security'));
+app.use('/api/templates', require('./routes/templates'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/storage', require('./routes/storage'));
 

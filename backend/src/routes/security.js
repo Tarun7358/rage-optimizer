@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const dbService = require('../services/dbService');
+const backupService = require('../services/backupService');
+const restoreQueue = require('../services/restoreQueue');
 const { client: botClient } = require('../bot/client');
 
 // GET /api/security/:guildId/backups - List backups
@@ -22,68 +24,38 @@ router.post('/:guildId/backups', authMiddleware, async (req, res) => {
 
   try {
     const backupId = 'RAGE_' + Math.random().toString(36).substring(2, 10).toUpperCase();
-    
-    let savedChannels = [];
-    let savedRoles = [];
-
     const liveGuild = botClient.guilds.cache.get(guildId);
+    
+    let captured = null;
     if (liveGuild) {
-      // Gather Channels
-      liveGuild.channels.cache.forEach(channel => {
-        const overwrites = [];
-        channel.permissionOverwrites.cache.forEach(ow => {
-          overwrites.push({
-            id: ow.id,
-            type: ow.type === 0 ? 'role' : 'member',
-            allow: ow.allow.bitfield.toString(),
-            deny: ow.deny.bitfield.toString()
-          });
-        });
-        savedChannels.push({
-          name: channel.name,
-          type: channel.type,
-          parentId: channel.parentId,
-          position: channel.position,
-          topic: channel.topic || "",
-          nsfw: channel.nsfw || false,
-          rateLimitPerUser: channel.rateLimitPerUser || 0,
-          permissionOverwrites: overwrites
-        });
-      });
-
-      // Gather Roles
-      liveGuild.roles.cache.forEach(role => {
-        if (role.name === '@everyone' || role.managed) return;
-        savedRoles.push({
-          name: role.name,
-          color: role.color,
-          hoist: role.hoist,
-          position: role.position,
-          permissions: role.permissions.bitfield.toString(),
-          managed: role.managed,
-          mentionable: role.mentionable
-        });
-      });
+      captured = await backupService.captureGuild(liveGuild);
     } else {
-      // Mock data if running in developer offline environment
-      savedChannels = [
-        { name: 'general', type: 0, position: 1 },
-        { name: 'welcome', type: 0, position: 0 },
-        { name: 'voice-chat', type: 2, position: 2 }
-      ];
-      savedRoles = [
-        { name: 'Administrator', color: 16711740, position: 1, permissions: '8' },
-        { name: 'VIP Buyer', color: 16776960, position: 2, permissions: '0' }
-      ];
+      // Mock fallback data for offline simulator
+      captured = {
+        serverSettings: { name: 'Rage Esports Tournament [MOCK]', verificationLevel: 1 },
+        roles: [
+          { id: '1', name: 'Administrator', color: 16711740, hoist: true, position: 1, permissions: '8', isEveryone: false },
+          { id: '2', name: 'Staff Support', color: 3447003, hoist: true, position: 2, permissions: '0', isEveryone: false }
+        ],
+        categories: [
+          { id: '10', name: 'Welcome Lobby', type: 4, position: 0, permissionOverwrites: [] }
+        ],
+        channels: [
+          { id: '11', name: 'rules', type: 0, parentId: '10', position: 0, permissionOverwrites: [] },
+          { id: '12', name: 'announcements', type: 0, parentId: '10', position: 1, permissionOverwrites: [] },
+          { id: '13', name: 'matchmaking-lobby', type: 2, parentId: '10', position: 2, permissionOverwrites: [] }
+        ],
+        emojis: []
+      };
     }
 
     const backupData = {
       backupId,
+      ownerId: liveGuild ? liveGuild.ownerId : 'mock_owner_id',
       creatorId: req.user.userId,
       creatorName: req.user.username,
-      name: name || `Backup - ${new Date().toLocaleDateString()}`,
-      channels: savedChannels,
-      roles: savedRoles
+      backupName: name || `Backup - ${new Date().toLocaleDateString()}`,
+      backupData: captured
     };
 
     const newBackup = await dbService.addBackup(guildId, backupData);
@@ -94,7 +66,7 @@ router.post('/:guildId/backups', authMiddleware, async (req, res) => {
       executorId: req.user.userId,
       executorName: req.user.username,
       severity: 'info',
-      details: `Created server configuration backup: ${newBackup.name} (${backupId})`
+      details: `Created server configuration backup: ${newBackup.backupName} (${backupId})`
     });
 
     res.json({ success: true, backup: newBackup });
@@ -102,6 +74,34 @@ router.post('/:guildId/backups', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('[Security Backup Error]', error);
     res.status(500).json({ error: 'Failed to create backup snapshot' });
+  }
+});
+
+// DELETE /api/security/:guildId/backups/:backupId - Delete a backup
+router.delete('/:guildId/backups/:backupId', authMiddleware, async (req, res) => {
+  const { guildId, backupId } = req.params;
+
+  try {
+    const backup = await dbService.getBackupById(guildId, backupId);
+    if (!backup) {
+      return res.status(404).json({ error: 'Backup snapshot not found.' });
+    }
+
+    await dbService.deleteBackup(guildId, backupId);
+
+    // Log action
+    await dbService.addSecurityLog(guildId, {
+      action: 'BACKUP_DELETE',
+      executorId: req.user.userId,
+      executorName: req.user.username,
+      severity: 'info',
+      details: `Deleted backup snapshot: ${backup.backupName || backup.name} (${backupId})`
+    });
+
+    res.json({ success: true, message: 'Backup successfully deleted.' });
+  } catch (error) {
+    console.error('[Security Backup Delete Error]', error);
+    res.status(500).json({ error: 'Failed to delete backup snapshot' });
   }
 });
 
@@ -118,58 +118,57 @@ router.post('/:guildId/backups/:backupId/restore', authMiddleware, async (req, r
     const liveGuild = botClient.guilds.cache.get(guildId);
     
     if (liveGuild) {
-      console.log(`[Security Restore] Starting restoration for live guild: ${liveGuild.name}`);
-      
-      await dbService.addSecurityLog(guildId, {
-        action: 'BACKUP_RESTORE',
-        executorId: req.user.userId,
-        executorName: req.user.username,
-        severity: 'critical',
-        details: `Triggered full restoration using backup: ${backup.name} (${backupId}). Recreating ${backup.channels ? backup.channels.length : 0} channels.`,
-        prevented: false
-      });
+      // Validate Permissions: Must be owner or admin
+      const member = await liveGuild.members.fetch(req.user.userId).catch(() => null);
+      if (!member && !req.user.isAdmin) {
+        return res.status(403).json({ error: 'You are not a member of this server.' });
+      }
 
-      // Implement restoration async in background to avoid route timeouts
-      setTimeout(async () => {
-        try {
-          // Clear current channels
-          for (const [id, channel] of liveGuild.channels.cache) {
-            await channel.delete().catch(() => {});
-          }
-          // Recreate roles and channels
-          if (backup.channels) {
-            for (const c of backup.channels) {
-              await liveGuild.channels.create({
-                name: c.name,
-                type: c.type,
-                topic: c.topic,
-                nsfw: c.nsfw,
-                rateLimitPerUser: c.rateLimitPerUser
-              }).catch(() => {});
-            }
-          }
-        } catch (e) {
-          console.error('[Restore Background Error]', e);
-        }
-      }, 1000);
+      const isOwner = liveGuild.ownerId === req.user.userId;
+      const isAdmin = member ? member.permissions.has('Administrator') : false;
+
+      if (!isOwner && !isAdmin && !req.user.isAdmin) {
+        return res.status(403).json({ error: 'Access Denied: Only Guild Owners or server Administrators can perform restores.' });
+      }
+
+      // Check active restorations
+      if (restoreQueue.isActive(guildId)) {
+        return res.status(400).json({ error: 'A restoration is already running for this server.' });
+      }
+
+      // Check cooldowns
+      const remainingCooldown = restoreQueue.getCooldown(guildId);
+      if (remainingCooldown > 0) {
+        return res.status(400).json({ error: `Restoration is on cooldown. Please wait ${Math.ceil(remainingCooldown / 60000)} minutes.` });
+      }
+
+      // Trigger restoration queue
+      await restoreQueue.startRestore(liveGuild, backup.backupData || backup, {
+        id: req.user.userId,
+        username: req.user.username
+      });
 
     } else {
-      // Mock log
-      await dbService.addSecurityLog(guildId, {
-        action: 'BACKUP_RESTORE',
-        executorId: req.user.userId,
-        executorName: req.user.username,
-        severity: 'critical',
-        details: `[MOCK MODE] Triggered simulation restoration using backup: ${backup.name} (${backupId}).`,
-        prevented: true
-      });
+      // Mock simulation mode
+      const isFirebaseMock = require('../config/firebase').isFirebaseMock;
+      if (isFirebaseMock) {
+        await dbService.addRestoreLog(guildId, {
+          action: 'RESTORE_APPLY',
+          executorId: req.user.userId,
+          executorName: req.user.username,
+          status: 'success',
+          details: `[MOCK MODE] Simulation loading of backup: ${backup.backupName || backup.name} (${backupId}).`
+        });
+      } else {
+        return res.status(404).json({ error: 'Rage Optimizer Bot is not in this server.' });
+      }
     }
 
-    res.json({ success: true, message: 'Server restoration has been queued successfully.' });
+    res.json({ success: true, message: 'Server restoration has been queued successfully. Recreating structure...' });
 
   } catch (error) {
     console.error('[Restore API Error]', error);
-    res.status(500).json({ error: 'Failed to restore backup snapshot' });
+    res.status(500).json({ error: error.message || 'Failed to restore backup snapshot' });
   }
 });
 
@@ -181,6 +180,25 @@ router.get('/:guildId/logs', authMiddleware, async (req, res) => {
     res.json(logs);
   } catch (error) {
     res.status(500).json({ error: 'Failed to retrieve security logs' });
+  }
+});
+
+// GET /api/security/:guildId/restore-logs - Get restore progress / history logs
+router.get('/:guildId/restore-logs', authMiddleware, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const logs = await dbService.getRestoreLogs(guildId);
+    
+    // Check if there is an active progress to inject at the top
+    const active = restoreQueue.getProgress(guildId);
+    
+    res.json({
+      history: logs,
+      active
+    });
+  } catch (error) {
+    console.error('[Restore Logs GET Error]', error);
+    res.status(500).json({ error: 'Failed to retrieve restore logs' });
   }
 });
 

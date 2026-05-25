@@ -309,26 +309,34 @@ const dbService = {
             _id: 'mock_backup_1',
             guildId,
             backupId: 'RAGE_A9B8C7D6',
+            ownerId: '1234567890',
             creatorId: '1234567890',
             creatorName: 'RageDeveloper',
+            backupName: 'Post-Setup Snapshot (Base)',
             name: 'Post-Setup Snapshot (Base)',
-            channels: [
-              { name: 'general', type: 0 },
-              { name: 'rules', type: 0 },
-              { name: 'tickets', type: 0 },
-              { name: 'voice-chat', type: 2 }
-            ],
-            roles: [
-              { name: 'Administrator', permissions: '8' },
-              { name: 'Staff Support', permissions: '0' }
-            ],
+            backupData: {
+              channels: [
+                { name: 'general', type: 0, position: 1 },
+                { name: 'rules', type: 0, position: 0 },
+                { name: 'tickets', type: 0, position: 2 },
+                { name: 'voice-chat', type: 2, position: 3 }
+              ],
+              roles: [
+                { name: 'Administrator', permissions: '8', color: 16711740, hoist: true, position: 1 },
+                { name: 'Staff Support', permissions: '0', color: 3447003, hoist: true, position: 2 }
+              ],
+              categories: [],
+              emojis: [],
+              serverSettings: { name: 'Rage Esports Tournament', verificationLevel: 1 }
+            },
             createdAt: new Date(Date.now() - 86400000).toISOString()
           }
         ];
         memoryDb.backups.push(...defaultBackups);
         return defaultBackups;
       }
-      return list;
+      // Sort by newest first
+      return [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     const snapshot = await db.collection('backups').where('guildId', '==', guildId).get();
@@ -336,7 +344,7 @@ const dbService = {
     snapshot.forEach(doc => {
       list.push({ _id: doc.id, ...doc.data() });
     });
-    return list;
+    return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
   getBackupById: async (guildId, backupId) => {
@@ -353,7 +361,7 @@ const dbService = {
     if (snapshot.empty) return null;
     let backup = null;
     snapshot.forEach(doc => {
-      backup = doc.data();
+      backup = { _id: doc.id, ...doc.data() };
     });
     return backup;
   },
@@ -362,11 +370,18 @@ const dbService = {
     const formatted = {
       guildId,
       backupId: backupData.backupId,
+      ownerId: backupData.ownerId || '',
       creatorId: backupData.creatorId,
       creatorName: backupData.creatorName,
-      name: backupData.name,
-      channels: backupData.channels,
-      roles: backupData.roles,
+      backupName: backupData.backupName || backupData.name || `Backup - ${new Date().toLocaleDateString()}`,
+      name: backupData.backupName || backupData.name || `Backup - ${new Date().toLocaleDateString()}`,
+      backupData: backupData.backupData || {
+        channels: backupData.channels || [],
+        roles: backupData.roles || [],
+        categories: backupData.categories || [],
+        emojis: backupData.emojis || [],
+        serverSettings: backupData.serverSettings || {}
+      },
       createdAt: new Date().toISOString()
     };
 
@@ -386,6 +401,278 @@ const dbService = {
     } catch (err) {}
 
     return result;
+  },
+
+  deleteBackup: async (guildId, backupId) => {
+    if (isFirebaseMock) {
+      memoryDb.backups = memoryDb.backups.filter(b => !(b.guildId === guildId && b.backupId === backupId));
+      return true;
+    }
+
+    const snapshot = await db.collection('backups')
+      .where('guildId', '==', guildId)
+      .where('backupId', '==', backupId)
+      .get();
+
+    const batch = db.batch();
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    try {
+      const socketService = require('./socketService');
+      socketService.emitToGuild(guildId, 'backupDeleted', backupId);
+    } catch (err) {}
+
+    return true;
+  },
+
+  // Templates CRUD
+  getTemplates: async (options = {}) => {
+    if (isFirebaseMock) {
+      if (!memoryDb.templates) {
+        memoryDb.templates = [
+          {
+            _id: 'mock_template_1',
+            templateId: 'rage-scrim-v1',
+            name: 'Rage Scrim Tournament',
+            description: 'Esports tournament configuration with automatic scrim registration and lobby voice channels.',
+            creatorId: '1234567890',
+            creatorName: 'RageDeveloper',
+            isPublic: true,
+            category: 'Esports',
+            tags: ['scrim', 'tournament', 'esports'],
+            installCount: 120,
+            downloadCount: 300,
+            createdAt: new Date().toISOString(),
+            backupData: {
+              channels: [
+                { name: 'information', type: 4, position: 0 },
+                { name: 'announcements', type: 0, position: 1, parentName: 'information' },
+                { name: 'registration', type: 0, position: 2, parentName: 'information' },
+                { name: 'scrims-lobby', type: 2, position: 3 }
+              ],
+              roles: [
+                { name: 'Organizer', color: 16711740, position: 1, permissions: '8' },
+                { name: 'Player', color: 3447003, position: 2, permissions: '0' }
+              ],
+              categories: [
+                { name: 'information', type: 4, position: 0 }
+              ],
+              emojis: [],
+              serverSettings: { name: 'Rage Esports Tournament', verificationLevel: 1 }
+            }
+          },
+          {
+            _id: 'mock_template_2',
+            templateId: 'rage-market-v2',
+            name: 'Rage Marketplace Layout',
+            description: 'Premium store layout containing product channels, reviews, support tickets, and staff roles.',
+            creatorId: '1234567890',
+            creatorName: 'RageDeveloper',
+            isPublic: true,
+            category: 'Marketplace',
+            tags: ['market', 'shop', 'tickets'],
+            installCount: 85,
+            downloadCount: 190,
+            createdAt: new Date().toISOString(),
+            backupData: {
+              channels: [
+                { name: 'shop-area', type: 4, position: 0 },
+                { name: 'products', type: 0, position: 1, parentName: 'shop-area' },
+                { name: 'vouch-reviews', type: 0, position: 2, parentName: 'shop-area' }
+              ],
+              roles: [
+                { name: 'Seller', color: 16776960, position: 1, permissions: '8' },
+                { name: 'Buyer', color: 3447003, position: 2, permissions: '0' }
+              ],
+              categories: [
+                { name: 'shop-area', type: 4, position: 0 }
+              ],
+              emojis: [],
+              serverSettings: { name: 'Rage Marketplace Hub', verificationLevel: 2 }
+            }
+          }
+        ];
+      }
+
+      let list = [...memoryDb.templates];
+      if (options.isPublic !== undefined) {
+        list = list.filter(t => t.isPublic === options.isPublic || (options.creatorId && t.creatorId === options.creatorId));
+      }
+      if (options.category && options.category !== 'All') {
+        list = list.filter(t => t.category.toLowerCase() === options.category.toLowerCase());
+      }
+      if (options.search) {
+        const q = options.search.toLowerCase();
+        list = list.filter(t => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) || t.templateId.toLowerCase().includes(q));
+      }
+      return list;
+    }
+
+    let query = db.collection('templates');
+    if (options.isPublic !== undefined) {
+      query = query.where('isPublic', '==', options.isPublic);
+    }
+    if (options.category && options.category !== 'All') {
+      query = query.where('category', '==', options.category);
+    }
+
+    const snapshot = await query.get();
+    let list = [];
+    snapshot.forEach(doc => {
+      list.push({ _id: doc.id, ...doc.data() });
+    });
+
+    if (options.search) {
+      const q = options.search.toLowerCase();
+      list = list.filter(t => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) || t.templateId.toLowerCase().includes(q));
+    }
+
+    return list;
+  },
+
+  getTemplateById: async (templateId) => {
+    if (isFirebaseMock) {
+      if (!memoryDb.templates) memoryDb.templates = [];
+      return memoryDb.templates.find(t => t.templateId === templateId) || null;
+    }
+
+    const snapshot = await db.collection('templates')
+      .where('templateId', '==', templateId)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) return null;
+    let template = null;
+    snapshot.forEach(doc => {
+      template = { _id: doc.id, ...doc.data() };
+    });
+    return template;
+  },
+
+  addTemplate: async (templateData) => {
+    const formatted = {
+      templateId: templateData.templateId,
+      name: templateData.name,
+      description: templateData.description || '',
+      creatorId: templateData.creatorId,
+      creatorName: templateData.creatorName,
+      isPublic: templateData.isPublic !== undefined ? templateData.isPublic : false,
+      category: templateData.category || 'General',
+      tags: templateData.tags || [],
+      installCount: 0,
+      downloadCount: 0,
+      backupData: templateData.backupData,
+      createdAt: new Date().toISOString()
+    };
+
+    if (isFirebaseMock) {
+      if (!memoryDb.templates) memoryDb.templates = [];
+      formatted._id = 'mock_template_' + Math.random().toString(36).substring(7);
+      memoryDb.templates.push(formatted);
+      return formatted;
+    }
+
+    const docRef = await db.collection('templates').add(formatted);
+    return { _id: docRef.id, ...formatted };
+  },
+
+  updateTemplate: async (templateId, updateData) => {
+    if (isFirebaseMock) {
+      const idx = memoryDb.templates?.findIndex(t => t.templateId === templateId);
+      if (idx !== -1 && idx !== undefined) {
+        memoryDb.templates[idx] = { ...memoryDb.templates[idx], ...updateData };
+        return memoryDb.templates[idx];
+      }
+      return null;
+    }
+
+    const snapshot = await db.collection('templates')
+      .where('templateId', '==', templateId)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) return null;
+    let docId = null;
+    snapshot.forEach(doc => {
+      docId = doc.id;
+    });
+
+    await db.collection('templates').doc(docId).update(updateData);
+    const updated = await db.collection('templates').doc(docId).get();
+    return { _id: docId, ...updated.data() };
+  },
+
+  deleteTemplate: async (templateId) => {
+    if (isFirebaseMock) {
+      if (memoryDb.templates) {
+        memoryDb.templates = memoryDb.templates.filter(t => t.templateId !== templateId);
+      }
+      return true;
+    }
+
+    const snapshot = await db.collection('templates')
+      .where('templateId', '==', templateId)
+      .get();
+
+    const batch = db.batch();
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    return true;
+  },
+
+  // Restore Logs CRUD
+  addRestoreLog: async (guildId, logData) => {
+    const formatted = {
+      guildId,
+      action: logData.action || 'RESTORE_ACTION',
+      executorId: logData.executorId,
+      executorName: logData.executorName,
+      status: logData.status || 'info', // 'success', 'failed', 'info'
+      details: logData.details,
+      createdAt: new Date().toISOString()
+    };
+
+    if (isFirebaseMock) {
+      if (!memoryDb.restoreLogs) memoryDb.restoreLogs = [];
+      formatted._id = 'mock_restore_log_' + Math.random().toString(36).substring(7);
+      memoryDb.restoreLogs.push(formatted);
+      return formatted;
+    }
+
+    const docRef = await db.collection('restoreLogs').add(formatted);
+    return { _id: docRef.id, ...formatted };
+  },
+
+  getRestoreLogs: async (guildId) => {
+    if (isFirebaseMock) {
+      if (!memoryDb.restoreLogs) return [];
+      const list = memoryDb.restoreLogs.filter(l => l.guildId === guildId);
+      return [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    const snapshot = await db.collection('restoreLogs')
+      .where('guildId', '==', guildId)
+      .get();
+    const list = [];
+    snapshot.forEach(doc => {
+      list.push({ _id: doc.id, ...doc.data() });
+    });
+    return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+
+  // Backup Metadata CRUD
+  getBackupMetadata: async (guildId) => {
+    const backups = await dbService.getBackups(guildId);
+    return {
+      totalBackups: backups.length,
+      latestBackupAt: backups.length > 0 ? backups[0].createdAt : null,
+      sizeBytesEstimate: backups.length * 1024
+    };
   },
 
   // Security Logs CRUD
