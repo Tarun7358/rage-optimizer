@@ -100,14 +100,18 @@ export default function Servers() {
           <h4 className="font-gaming font-bold text-white text-base truncate mb-1" title={guild.name}>
             {guild.name}
           </h4>
-          {guild.botJoined ? (
-            <div className="flex items-center space-x-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Bot Active</span>
-            </div>
-          ) : (
-            <span className="text-[10px] text-textGray/60 font-semibold uppercase tracking-wider">Bot Not Added</span>
-          )}
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {guild.owner ? (
+              <span className="text-[8px] font-gaming font-black tracking-wider bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/15">OWNER</span>
+            ) : (
+              <span className="text-[8px] font-gaming font-black tracking-wider bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/15">ADMIN</span>
+            )}
+            {guild.botJoined ? (
+              <span className="text-[8px] font-gaming font-black tracking-wider bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/15">ACTIVE</span>
+            ) : (
+              <span className="text-[8px] font-gaming font-black tracking-wider bg-zinc-500/10 text-zinc-400 px-2 py-0.5 rounded border border-zinc-500/15">NOT IN</span>
+            )}
+          </div>
         </div>
       </div>
 

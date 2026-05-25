@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function EmbedBuilder({ embed, onChange }) {
+export default function EmbedBuilder({ embed, onChange, guildName }) {
   const handleChange = (key, value) => {
     onChange({
       ...embed,
@@ -107,12 +107,12 @@ export default function EmbedBuilder({ embed, onChange }) {
                   <div className="flex-1 pr-4">
                     {embed.title && (
                       <div className="text-white text-md font-semibold mb-1 cursor-pointer hover:underline">
-                        {embed.title.replace(/{server}/g, 'Rage Esports').replace(/{user}/g, '@RageDeveloper')}
+                        {embed.title.replace(/{server}/g, guildName || 'Rage Esports').replace(/{user}/g, '@RageDeveloper')}
                       </div>
                     )}
                     {embed.description && (
                       <div className="text-[#dcddde] text-sm whitespace-pre-wrap leading-relaxed">
-                        {embed.description.replace(/{server}/g, 'Rage Esports').replace(/{user}/g, '@RageDeveloper').replace(/{membercount}/g, '1420')}
+                        {embed.description.replace(/{server}/g, guildName || 'Rage Esports').replace(/{user}/g, '@RageDeveloper').replace(/{membercount}/g, '1420')}
                       </div>
                     )}
                   </div>

@@ -235,6 +235,7 @@ export default function WelcomeDash() {
                   <EmbedBuilder 
                     embed={settings.welcome.embed} 
                     onChange={handleEmbedChange} 
+                    guildName={guildName}
                   />
                 ) : (
                   <div>
