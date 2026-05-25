@@ -140,6 +140,9 @@ export const AuthProvider = ({ children }) => {
       return guilds;
     } catch (error) {
       console.error('Failed to refresh guilds', error);
+      if (error.response && error.response.status === 401) {
+        logout();
+      }
       throw error;
     }
   };

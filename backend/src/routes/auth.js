@@ -306,6 +306,9 @@ router.get('/guilds', authMiddleware, async (req, res) => {
 
   } catch (error) {
     console.error('[Refresh Guilds API Error]', error.response ? error.response.data : error.message);
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      return res.status(401).json({ error: 'Discord session expired. Please log out and log back in.' });
+    }
     res.status(500).json({ error: 'Failed to refresh guilds from Discord' });
   }
 });
